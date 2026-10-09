@@ -16,11 +16,9 @@ React + Vite + TypeScript + Tailwind CSS frontend for the OpenClinic educational
 frontend/
 ├── src/
 │   ├── api/           # API client and endpoints
-│   ├── components/    # Reusable UI components
-│   ├── context/       # React context providers (Auth)
-│   ├── hooks/         # Custom React hooks
-│   ├── pages/         # Page components
-│   ├── types/         # TypeScript type definitions
+│   ├── components/    # Shared UI components, grouped by purpose
+│   ├── features/      # Feature pages and auth context
+│   ├── shared/        # Shared TypeScript types
 │   ├── App.tsx        # Main app with routing
 │   ├── main.tsx       # Entry point
 │   └── index.css      # Global styles + Tailwind
@@ -100,7 +98,7 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 
 ## API Integration
 
-The frontend uses a centralized API client (`src/api/client.ts`) that:
+The frontend uses a centralized API client (`src/api/httpClient.ts`) that:
 - Handles JWT token storage in localStorage
 - Automatically attaches Authorization headers
 - Redirects to login on 401 responses

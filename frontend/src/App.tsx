@@ -1,18 +1,18 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
-import Layout from './components/Layout';
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import PatientDashboard from './pages/PatientDashboard';
-import DoctorsPage from './pages/DoctorsPage';
-import BookAppointmentPage from './pages/BookAppointmentPage';
-import MyAppointmentsPage from './pages/MyAppointmentsPage';
-import MyPrescriptionsPage from './pages/MyPrescriptionsPage';
-import MyInvoicesPage from './pages/MyInvoicesPage';
-import ProfilePage from './pages/ProfilePage';
-import StaffDashboard from './pages/StaffDashboard';
-import HealthCheck from './pages/HealthCheck';
+import { useAuth } from './features/auth/AuthContext';
+import Layout from './components/layout/Layout';
+import LandingPage from './features/home/LandingPage';
+import LoginPage from './features/auth/LoginPage';
+import RegisterPage from './features/auth/RegisterPage';
+import PatientDashboard from './features/dashboard/PatientDashboard';
+import DoctorsPage from './features/doctors/DoctorsPage';
+import BookAppointmentPage from './features/appointments/BookAppointmentPage';
+import MyAppointmentsPage from './features/appointments/MyAppointmentsPage';
+import MyPrescriptionsPage from './features/prescriptions/MyPrescriptionsPage';
+import MyInvoicesPage from './features/billing/MyInvoicesPage';
+import ProfilePage from './features/profile/ProfilePage';
+import StaffDashboard from './features/staff/StaffDashboard';
+import HealthCheck from './features/health/HealthCheck';
 
 function PrivateRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
   const { user, loading } = useAuth();

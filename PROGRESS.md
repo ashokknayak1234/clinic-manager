@@ -47,7 +47,7 @@
 ## Verification and limitations
 
 - `MySQL80` service is running; localhost port 3306 is reachable. MySQL CLI exists at `C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe`, but is not on PATH.
-- The configured app account connected using `app/core/database.py`; `GET /api/v1/health/database` returned HTTP 200 and MySQL 8.0.46 for `openclinic_db`.
+- The configured app account connected using `app/db/connection.py`; `GET /api/v1/health/database` returned HTTP 200 and MySQL 8.0.46 for `openclinic_db`.
 - A parameterized insert into `departments` was rolled back and verified absent. No persistent data was added by the check.
 - Read-only metadata showed 15 InnoDB tables, two views, two appointment audit triggers, the `book_appointment` procedure, 18 foreign keys, and 10 check constraints.
 - Python 3.14.7 is in use (the project requires Python 3.11+). Backend dependencies are installed.

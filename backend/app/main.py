@@ -4,9 +4,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api.v1.router import router as api_router
 from app.core.config import get_settings
-from app.routes.health import router as health_router
-from app.routes.auth import router as auth_router
 
 
 @asynccontextmanager
@@ -23,8 +22,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
 )
-app.include_router(health_router, prefix="/api/v1")
-app.include_router(auth_router, prefix="/api/v1")
+app.include_router(api_router, prefix="/api/v1")
 
 
 @app.exception_handler(Exception)

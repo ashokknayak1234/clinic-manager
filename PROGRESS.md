@@ -71,6 +71,49 @@ See `docs/database-design.md` for full details. Key gaps vs PRD:
 - Report views incomplete (FR-36, FR-37)
 - DBMS Explorer metadata queries missing (FR-43–47)
 
+## Frontend rebuild — Next.js (2026-11-14, branch `feat/nextjs-frontend`)
+
+- **What was rebuilt:** the entire `frontend/` was replaced with React 19.3.1 + Next.js
+  16.4.6 (App Router, Turbopack), TypeScript strict, Tailwind CSS 4, shadcn/ui
+  (radix-nova), `lucide-react` icons, `motion` 14 and Lenis, per the binding spec at
+  `C:\Users\ASHOK\.opencode\plan\design.md`. 14 routes across marketing `(marketing)`,
+  auth `(auth)`, portal `(portal)` groups and `/health`.
+- **What is real:** FastAPI authentication (`/auth/login`, `/auth/register`, `/auth/me`)
+  with bearer-token handling, remember-me persistence, 401 clearing via an
+  `openclinic:unauthorized` event, and the live `/health` page polling
+  `/api/v1/health` + `/api/v1/health/database` (FastAPI `ok`; MySQL `connected ·
+  openclinic_db · 8.0.46`). The Next rewrite proxies `/api/*` to `API_ORIGIN`
+  (default `http://127.0.0.1:8000`), so no CORS entries are needed.
+- **What is mocked:** every clinical screen reads the typed adapter
+  `frontend/features/api/mock.ts` (doctors, appointments, prescriptions, invoices,
+  slots, staff queues), with `TODO(api)` markers naming the future endpoints. The demo
+  clock is frozen (`DEMO_NOW = 2026-11-12T09:05:52`) so SSR and client agree and
+  screenshots reproduce. Canonical figures: 12 today / 24 patients / 6 active doctors /
+  3 pending / 42% completion; weekly 8·11·9·12·14·6·4; 17 appointment rows;
+  invoices ₹4,850 / ₹2,300 / ₹2,550.
+- **Quality gates passed:** `npm run build` (14 routes) + `npm run lint` + `tsc --noEmit`
+  clean; landing renders all sections with no console errors; Lighthouse `/` desktop
+  production: Accessibility 95, Best Practices 100, SEO 100, Performance 100 (LCP 0.3 s,
+  CLS 0.00); every portal route shows mock data plus the mandatory demo disclaimer;
+  keyboard-only pass including dialogs/sheets with focus restore; reduced-motion pass
+  (no infinite loops, no Lenis); responsive sweeps at 360/768/1024/1280/1440 with no
+  horizontal overflow; screenshots in `docs/screens/`; no teal, no reference branding,
+  no sub-12px text.
+- **Register integration verified in MySQL:** new accounts persist all optional fields
+  (name, DOB, phone, address, emergency contacts, blood group).
+- **Unverified gates (recorded, never faked):** the three demo-account logins
+  (`patient|doctor|admin@demo.com`) — the accounts exist only in the
+  `database/backups/…` dump, not the installed database; and PATIENT-role navigation —
+  the backend register path hardcodes role RECEPTIONIST (`role_id = 4`), which is a
+  backend bug documented rather than fixed (`backend/**` is read-only). Details:
+  `frontend/DEVIATIONS.md`.
+- **Cleanup pending:** `frontend/legacy-vite/`, `frontend/dist/` and
+  `frontend/FRONTEND_DEVELOPMENT_GUIDE.md` are retained until the demo-account gates
+  verify; the §13.6 cleanup block has not been run.
+- **Remaining asset TODO:** optional licensed transparent hero photo can later replace
+  the "care in motion" card cluster via `components/marketing/hero-media.tsx`
+  (non-blocking, spec §16.1). No stock photography was used.
+
 ## Next task
 
 1. **Address schema gaps** (priority order):

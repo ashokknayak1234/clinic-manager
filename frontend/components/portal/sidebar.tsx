@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { PromoCard } from "@/components/portal/promo-card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/providers/auth-provider";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -135,9 +136,11 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           onClick={onNavigate}
           className="flex items-center gap-2.5 rounded-lg p-1 transition-colors hover:bg-subtle"
         >
-          <span className="flex size-[34px] items-center justify-center rounded-full bg-accent-500 text-[12px] font-semibold text-white">
-            {initials(displayName)}
-          </span>
+          <Avatar className="size-[34px] shrink-0 rounded-full after:hidden">
+            <AvatarFallback className="bg-accent-500 text-[12px] font-semibold text-white">
+              {initials(displayName)}
+            </AvatarFallback>
+          </Avatar>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[13px] font-semibold text-ink">
               {displayName}

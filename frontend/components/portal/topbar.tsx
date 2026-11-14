@@ -3,9 +3,17 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Bell, ChevronDown, LogOut, Mail, Menu, Search, X } from "lucide-react";
+import { Bell, ChevronDown, LogOut, Mail, Menu, Search, UserRound, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -147,21 +155,41 @@ export function Topbar({
           <TooltipContent>Notifications are not connected in demo mode</TooltipContent>
         </Tooltip>
 
-        <Link
-          href="/profile"
-          className="flex items-center gap-2.5 rounded-md p-1 transition-colors hover:bg-subtle"
-        >
-          <span className="flex size-11 items-center justify-center rounded-md bg-accent-500 text-[13px] font-semibold text-white">
-            {initials(name)}
-          </span>
-          <span className="hidden min-w-0 lg:block">
-            <span className="block truncate text-[13px] font-semibold text-ink">
-              {name}
-            </span>
-            <span className="block text-[11px] text-ink-muted">{roleLabels[role]}</span>
-          </span>
-          <ChevronDown className="hidden size-4 text-ink-faint lg:block" aria-hidden="true" />
-        </Link>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Account menu"
+              className="flex items-center gap-2.5 rounded-md p-1 transition-colors hover:bg-subtle"
+            >
+              <Avatar className="size-11 shrink-0 rounded-md after:hidden">
+                <AvatarFallback className="rounded-md bg-accent-500 text-[13px] font-semibold text-white">
+                  {initials(name)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="hidden min-w-0 lg:block text-left">
+                <span className="block truncate text-[13px] font-semibold text-ink">
+                  {name}
+                </span>
+                <span className="block text-[11px] text-ink-muted">{roleLabels[role]}</span>
+              </span>
+              <ChevronDown className="hidden size-4 text-ink-faint lg:block" aria-hidden="true" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem asChild>
+              <Link href="/profile">
+                <UserRound className="size-4" aria-hidden="true" />
+                Profile
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={onLogout}>
+              <LogOut className="size-4" aria-hidden="true" />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <Button
           variant="ghost"

@@ -7,6 +7,7 @@ import { DemoBanner } from "@/components/portal/demo-banner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/providers/auth-provider";
 import { initials } from "@/lib/format";
 import type { Role } from "@/shared/apiTypes";
@@ -165,13 +166,14 @@ export function ProfileView() {
               <Label htmlFor="address" className="text-[13px] text-ink">
                 Address
               </Label>
-              <Input
+              <Textarea
                 id="address"
                 name="address"
                 autoComplete="street-address"
+                rows={2}
                 value={form.address}
                 onChange={(event) => update("address", event.target.value)}
-                className="h-11 rounded-md border-line-strong px-3 text-sm"
+                className="min-h-11 rounded-md border-line-strong px-3 py-2 text-sm"
               />
             </div>
 

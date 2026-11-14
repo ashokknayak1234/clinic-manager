@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { ArrowLeft, CalendarCheck2, Check, Clock3 } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeading } from "@/components/portal/page-heading";
 import { DemoBanner } from "@/components/portal/demo-banner";
 import { EmptyState } from "@/components/portal/empty-state";
@@ -228,6 +229,7 @@ export function BookingView() {
               onClick={() => {
                 setOpen(false);
                 setConfirmed(true);
+                toast.success("Appointment request recorded for the demo workspace.");
               }}
             >
               Confirm

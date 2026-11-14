@@ -1,6 +1,7 @@
 import { Pill } from "lucide-react";
 import { Sparkline } from "@/components/marketing/sparkline";
 import { StatusBadge } from "@/components/portal/status-badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 function CardShell({
@@ -30,9 +31,11 @@ function AppointmentCard() {
   return (
     <CardShell float="animate-float-a">
       <div className="flex items-center gap-3">
-        <span className="flex size-9 items-center justify-center rounded-full bg-primary-100 text-[12px] font-semibold text-primary-700">
-          DP
-        </span>
+        <Avatar className="size-9 shrink-0 rounded-full after:hidden">
+          <AvatarFallback className="bg-primary-100 text-[12px] font-semibold text-primary-700">
+            DP
+          </AvatarFallback>
+        </Avatar>
         <div>
           <p className="text-[13px] font-semibold text-ink">Demo Patient</p>
           <p className="text-[12px] text-ink-muted">Cardiology</p>

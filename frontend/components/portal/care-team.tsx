@@ -1,6 +1,7 @@
 import { careTeam } from "@/features/api/mock";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function CareTeam({
   rows = careTeam,
@@ -15,9 +16,11 @@ export function CareTeam({
         const active = doctor.is_active;
         return (
           <li key={doctor.doctor_id} className="flex items-center gap-3">
-            <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-primary-50 text-[12px] font-semibold text-primary-700">
-              {initials(doctor.full_name)}
-            </span>
+            <Avatar className="size-[34px] shrink-0 rounded-full after:hidden">
+              <AvatarFallback className="bg-primary-50 text-[12px] font-semibold text-primary-700">
+                {initials(doctor.full_name)}
+              </AvatarFallback>
+            </Avatar>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13px] font-semibold text-ink">
                 {doctor.full_name}

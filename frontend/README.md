@@ -142,7 +142,6 @@ frontend/
 ├── lib/                      # motion tokens, formatters, demo clock, utils
 ├── providers/                # app, auth, Lenis
 ├── shared/apiTypes.ts        # API/mock types
-├── legacy-vite/              # previous Vite app, retained until cleanup
 ├── next.config.ts
 ├── DEVIATIONS.md
 └── README.md
@@ -150,10 +149,8 @@ frontend/
 
 ## Legacy Vite app
 
-The previous Vite implementation is preserved in `frontend/legacy-vite/` and its guide in
-`frontend/FRONTEND_DEVELOPMENT_GUIDE.md`. It is excluded from the Next build. It will be
-removed (with the guide moved to `docs/frontend-vite-legacy-guide.md`) only after the full
-parity gate passes; some gates are still unverified, as recorded in `DEVIATIONS.md`.
+The previous Vite implementation was removed after the full §13.6 parity gate passed
+(2026-11-14). Its development guide is archived at `docs/frontend-vite-legacy-guide.md`.
 
 ## Educational disclaimer
 

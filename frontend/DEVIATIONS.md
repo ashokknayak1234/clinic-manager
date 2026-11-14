@@ -140,3 +140,45 @@ training data and points at the bundled docs.
 - Reduced motion: no infinite CSS animations, no Lenis, static entrances.
 - Keyboard-only pass on nav, login, dashboard, appointments table, cancel dialog,
   prescription sheet, booking dialog — Esc closes and focus returns to the trigger.
+
+### 10. Demo accounts restored with owner authorization (2026-11-14) — resolves entry 4
+
+The owner asked for working patient credentials, which authorized the database change
+previously withheld. Using the bcrypt hashes already present in
+`database/backups/openclinic_db_before_seed_2026-11-01.sql`, three rows were inserted into
+the live `openclinic_db.users` table (script kept at
+`%TEMP%\opencode\restore_demo_accounts.py`, idempotent):
+
+| Email | Role given | Note |
+| --- | --- | --- |
+| `admin@demo.com` | ADMIN (role 1) | hash from dump |
+| `doctor@demo.com` | DOCTOR (role 2) | hash from dump |
+| `patient@demo.com` | PATIENT (role 3) | dump carried `role_id = 4`; corrected to 3 |
+
+A matching `patients` row was created for the patient user (`patient_id = 52`,
+`user_id = 63`, "Demo Patient"). All three logins verified against the live FastAPI
+`/api/v1/auth/login` → correct roles, and `patient@demo.com / patient123` verified in the
+real UI: redirect to `/dashboard`, patient sidebar (Dashboard · Doctors · Appointments ·
+Prescriptions · Invoices · Profile), H1 "Welcome back, Demo", demo banner. The §13.6
+demo-login gate is now **verified**, no longer unverified. No `database/**` file was
+modified — this was a data change in the running MySQL instance, done with the owner's OK.
+
+### 11. PATIENT navigation verified — entry 5 consequence closed
+
+With the restored patient account, the PATIENT sidebar per §12.4 was exercised
+end-to-end in the browser. The backend register bug itself (entry 5, `role_id = 4`
+hardcoded in `backend/app/repositories/users.py`) remains documented, not fixed —
+`backend/**` stays read-only.
+
+### 12. §13.6 cleanup executed (2026-11-14) — resolves entry 7
+
+With all gate lines passing (including demo login, above), the cleanup block ran. The
+legacy Vite sources had already been consolidated under `frontend/legacy-vite/`, so the
+spec's per-file `git rm` maps to the folder:
+
+- `git mv frontend/FRONTEND_DEVELOPMENT_GUIDE.md docs/frontend-vite-legacy-guide.md`
+- `git rm -r frontend/legacy-vite frontend/dist`
+
+The guide was moved, never deleted. `frontend/README.md` updated to drop the legacy-Vite
+running instructions and point at the archived guide. Build + lint + tsc re-run clean
+after removal.

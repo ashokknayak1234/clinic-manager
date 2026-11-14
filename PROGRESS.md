@@ -101,15 +101,20 @@ See `docs/database-design.md` for full details. Key gaps vs PRD:
   no sub-12px text.
 - **Register integration verified in MySQL:** new accounts persist all optional fields
   (name, DOB, phone, address, emergency contacts, blood group).
-- **Unverified gates (recorded, never faked):** the three demo-account logins
-  (`patient|doctor|admin@demo.com`) — the accounts exist only in the
-  `database/backups/…` dump, not the installed database; and PATIENT-role navigation —
-  the backend register path hardcodes role RECEPTIONIST (`role_id = 4`), which is a
-  backend bug documented rather than fixed (`backend/**` is read-only). Details:
-  `frontend/DEVIATIONS.md`.
-- **Cleanup pending:** `frontend/legacy-vite/`, `frontend/dist/` and
-  `frontend/FRONTEND_DEVELOPMENT_GUIDE.md` are retained until the demo-account gates
-  verify; the §13.6 cleanup block has not been run.
+- **Demo accounts restored (owner-authorized, 2026-11-14):** `patient|doctor|admin@demo.com`
+  inserted into the live MySQL `users` table with the bcrypt hashes from the
+  `database/backups/…` dump (patient's role corrected from the dump's `role_id = 4` to 3),
+  plus a `patients` row for the patient user. All three verified against the live API, and
+  the patient login verified in the real UI (`patient123` → `/dashboard`, patient sidebar,
+  "Welcome back, Demo"). The §13.6 demo-login gate is now **passed**. Details:
+  `frontend/DEVIATIONS.md` entry 10.
+- **PATIENT navigation verified** end-to-end (Dashboard · Doctors · Appointments ·
+  Prescriptions · Invoices · Profile). The backend register bug (new accounts become
+  RECEPTIONIST, `role_id = 4` hardcoded) remains documented, not fixed — `backend/**` is
+  read-only. `frontend/DEVIATIONS.md` entry 11.
+- **§13.6 cleanup executed:** `FRONTEND_DEVELOPMENT_GUIDE.md` moved to
+  `docs/frontend-vite-legacy-guide.md`; `frontend/legacy-vite/` and `frontend/dist/`
+  removed; build + lint + tsc re-run clean after removal.
 - **Remaining asset TODO:** optional licensed transparent hero photo can later replace
   the "care in motion" card cluster via `components/marketing/hero-media.tsx`
   (non-blocking, spec §16.1). No stock photography was used.

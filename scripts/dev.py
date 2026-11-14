@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 OpenClinic Development Server Launcher
-Starts both backend (FastAPI) and frontend (Vite) servers.
+Starts both backend (FastAPI) and frontend (Next.js) servers.
 """
 import subprocess
 import sys
@@ -60,8 +60,8 @@ def start_backend():
     return p
 
 def start_frontend():
-    """Start Vite frontend on port 5173."""
-    print("Starting frontend (Vite) on http://localhost:5173 ...")
+    """Start the Next.js frontend on port 3000."""
+    print("Starting frontend (Next.js) on http://localhost:3000 ...")
     env = os.environ.copy()
     cmd = ["npm", "run", "dev"]
     # Use DEVNULL to avoid pipe buffer issues
@@ -115,13 +115,12 @@ def main():
     print("=" * 60)
     print("Backend API:     http://127.0.0.1:8000")
     print("API Docs:        http://127.0.0.1:8000/docs")
-    print("Frontend:        http://localhost:5173")
-    print("Health Check:    http://localhost:5173/health")
+    print("Frontend:        http://localhost:3000")
+    print("Health Check:    http://localhost:3000/health")
     print("=" * 60)
-    print("\nDemo Accounts:")
-    print("  Admin:      admin@demo.com     / admin123")
-    print("  Doctor:     doctor@demo.com    / doctor123")
-    print("  Patient:    patient@demo.com   / patient123")
+    print("\nSign-in note:")
+    print("  database/seed.sql creates no login accounts. Register at /register,")
+    print("  or use an account already present in the local database.")
     print("=" * 60)
     print("\nPress Ctrl+C to stop both servers\n")
 

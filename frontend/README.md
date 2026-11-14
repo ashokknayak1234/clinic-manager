@@ -2,6 +2,8 @@
 
 React + Vite + TypeScript + Tailwind CSS frontend for the OpenClinic educational DBMS project.
 
+For the frontend architecture, API workflow, development rules, and known limitations, see [the frontend development guide](./FRONTEND_DEVELOPMENT_GUIDE.md).
+
 ## Tech Stack
 
 - **Framework**: React 18 with TypeScript

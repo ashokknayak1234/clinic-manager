@@ -33,7 +33,10 @@ export function LoginForm() {
     setError(null);
     setForgot(false);
     setLoading(true);
-    const result = await login({ email: email.trim(), password }, remember);
+    const result = await login(
+      { email: email.trim(), password: password.trim() },
+      remember,
+    );
     setLoading(false);
     if (!result.ok) {
       setError(result.message ?? "Sign in failed");

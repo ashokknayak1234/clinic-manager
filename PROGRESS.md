@@ -119,6 +119,25 @@ See `docs/database-design.md` for full details. Key gaps vs PRD:
   the "care in motion" card cluster via `components/marketing/hero-media.tsx`
   (non-blocking, spec §16.1). No stock photography was used.
 
+## Owner-directed workflow + PillNav (2026-11-15, branch `feat/nextjs-frontend`)
+
+- **Appointment rules changed (owner direction):** only PATIENT can request/book
+  appointments; staff (DOCTOR/ADMIN/RECEPTIONIST) confirm requests. Mock adapter gained
+  `requestAppointment()` (BOOKED/pending) and `confirmAppointment()` (BOOKED →
+  CONFIRMED). Booking route is PATIENT-only via RoleGate ("Patients only"); staff see no
+  Book buttons on `/doctors`; staff-only Confirm button appears on `BOOKED` rows in
+  `/appointments`; `/staff` queue card links to `/appointments?status=BOOKED`. Details
+  and new copy: `frontend/DEVIATIONS.md` entry 13. Note: static mock KPIs don't
+  live-update after a confirm (computed at import); the appointments table is the live
+  truth.
+- **React Bits PillNav integrated** as the marketing navigation
+  (`components/marketing/pill-nav.tsx` + `.css`), replacing `components/marketing/nav.tsx`
+  (deleted). TSX conversion, recoloured entirely through `globals.css` variables (no hex
+  outside `globals.css`), §7 nav items verbatim, light theme, md size. Wordmark stays
+  left of the pill bar. Details: `frontend/DEVIATIONS.md` entry 14.
+- **Quality gates re-run clean:** `npx tsc --noEmit`, `npm run lint`, `npm run build`
+  (14 routes) all pass with the workflow + PillNav changes.
+
 ## Next task
 
 1. **Address schema gaps** (priority order):

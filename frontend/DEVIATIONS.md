@@ -182,3 +182,86 @@ spec's per-file `git rm` maps to the folder:
 The guide was moved, never deleted. `frontend/README.md` updated to drop the legacy-Vite
 running instructions and point at the archived guide. Build + lint + tsc re-run clean
 after removal.
+
+---
+
+## 2026-11-15
+
+### 13. Owner-directed workflow rules: only PATIENT can request; staff must confirm
+
+The owner changed the product rules for appointments (2026-11-15): only PATIENT may
+request/book appointments; DOCTOR/ADMIN/RECEPTIONIST must confirm/approve requests. The
+spec's booking flow (§6.6) had no role restriction and created confirmed bookings.
+
+Implementation, all frontend-side (mock adapter + UI):
+
+- `features/api/mock.ts` gained `requestAppointment()` (creates a `BOOKED` — i.e.
+  pending — row) and `confirmAppointment()` (`BOOKED → CONFIRMED`).
+- `components/portal/booking-view.tsx` now creates a **request**: the confirm action
+  produces a `BOOKED` row and the success banner/toast say the request awaits staff
+  confirmation (new functional copy, below).
+- `app/(portal)/doctors/[doctorId]/book/page.tsx` is wrapped in
+  `RoleGate roles={["PATIENT"]}` (title "Patients only"); staff visiting the URL see the
+  gate instead of the booking form.
+- `components/portal/doctors-view.tsx` hides the Book button for staff roles, showing
+  "Patients book · staff confirm" instead.
+- `components/portal/appointments-view.tsx` shows a staff-only Confirm button on `BOOKED`
+  rows; the "Request appointment" header action is patient-only.
+- `components/portal/staff-view.tsx` queue card links to `/appointments?status=BOOKED`,
+  and the appointments view reads `?status=BOOKED` on mount.
+
+Consequence for the canonical dataset (§12.5): any booking made in a session adds an
+in-session row to the 17-row canonical table (e.g. the demo patient's request appears as
+row 18, `BOOKED`). Static mock KPIs (`pendingRequests`, `appointmentsToday`,
+`completionPercent`) are computed at module import and therefore do **not** live-update
+after a confirm; the `/appointments` table is the live source of truth during a session.
+
+New functional copy (owner-directed, minimal, logged here):
+
+- Banner/toast after patient confirms: appointment request sent and awaiting staff
+  confirmation.
+- Staff Confirm button on pending rows; toast confirms the appointment is now confirmed.
+- Role-gate title "Patients only" on the booking route.
+
+### 14. React Bits `<PillNav />` replaces the spec's marketing nav
+
+At the owner's direction (2026-11-15), `components/marketing/nav.tsx` (the spec §6 header
+nav with scroll-shrink + sheet menu) was **replaced** by the React Bits PillNav
+component, integrated as `components/marketing/pill-nav.tsx` +
+`components/marketing/pill-nav.css`:
+
+- Converted from the JavaScript source to typed TSX.
+- Recoloured to the OpenClinic palette: every theme value resolves through CSS variables
+  defined in `app/globals.css` (`--color-primary-500`, `--color-accent-500`,
+  `--color-panel`, `--color-surface`, `--color-subtle`, `--color-ink`) via
+  `color-mix(...)` — no hex outside `globals.css`, per §5.1.
+- Renders the §7 nav items verbatim: Home `/`, About `/#about`, Services `/#services`,
+  Goals `/#goals`, Sign in `/login`, Get started `/register`; `activeHref="/"`,
+  theme light, size md.
+- The OpenClinic wordmark stays as the header brand block on the left
+  (`components/brand/logo.tsx`); PillNav's own logo slot is unused.
+- The component's animated internals were adapted minimally for react-hooks v6 lint
+  (settings ref synced in an effect, render-phase state adjust for menu drop, one
+  scoped eslint-disable for the reduced-motion exit animation). Behaviour is otherwise
+  verbatim.
+
+### 15. `requestAppointment()` defaults the patient name in the mock store
+
+`features/api/mock.ts` labels in-session requests `patient_name: "Demo Patient"` because
+the API `User` type (`shared/apiTypes.ts`) carries no `full_name`; the canonical demo
+patient row (patient_id 52) is "Demo Patient". Cosmetic mock-only note, no API change.
+
+### 16. Mock slot end-times fixed during verification (2026-11-15)
+
+Live verification caught `getSlots()` producing slots that end before they start
+(`09:30–09:00`): the hour/minute carry logic was inverted. Fixed so a 30-minute slot
+renders correctly (`09:30–10:00`, `10:00–10:30`, …). Mock-data fix only; the booking
+dialog and appointments table now show correct ranges.
+
+### 17. Appointments status filter re-syncs with the URL (2026-11-15)
+
+Verified live: arriving at `/appointments?status=BOOKED` (staff queue card) and then
+clicking the plain sidebar "Appointments" link left the Booked filter applied because
+the client-side navigation to the same route does not remount the view. The view now
+re-syncs the status filter with the URL parameter (same pattern already used for
+`?search=`), so a plain link always shows every appointment.

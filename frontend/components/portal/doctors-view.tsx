@@ -18,8 +18,11 @@ import {
 } from "@/components/ui/select";
 import { departments, doctors } from "@/features/api/mock";
 import { formatCurrency, initials } from "@/lib/format";
+import { useAuth } from "@/providers/auth-provider";
 
 export function DoctorsView() {
+  const { user } = useAuth();
+  const isPatient = (user?.role ?? "PATIENT") === "PATIENT";
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("all");
 
@@ -131,14 +134,20 @@ export function DoctorsView() {
               </dl>
 
               <div className="mt-4 flex items-center gap-2">
-                {doctor.is_active ? (
-                  <Button asChild size="sm" className="rounded-full">
-                    <Link href={`/doctors/${doctor.doctor_id}/book`}>Book</Link>
-                  </Button>
+                {isPatient ? (
+                  doctor.is_active ? (
+                    <Button asChild size="sm" className="rounded-full">
+                      <Link href={`/doctors/${doctor.doctor_id}/book`}>Book</Link>
+                    </Button>
+                  ) : (
+                    <Button size="sm" disabled className="rounded-full">
+                      On leave
+                    </Button>
+                  )
                 ) : (
-                  <Button size="sm" disabled className="rounded-full">
-                    On leave
-                  </Button>
+                  <span className="text-[12px] text-ink-faint">
+                    Patients book · staff confirm
+                  </span>
                 )}
                 <Link
                   href="/appointments"

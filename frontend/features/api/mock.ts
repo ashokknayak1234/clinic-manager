@@ -217,6 +217,52 @@ export function completionPercent(): number {
   return Math.round((counts.COMPLETED / appointmentsToday) * 100);
 }
 
+// ---------------------------------------------------------------------------
+// Owner-directed appointment workflow (2026-11-15):
+//   PATIENT requests an appointment  -> row starts as BOOKED (pending)
+//   DOCTOR/ADMIN/RECEPTIONIST confirm -> row becomes CONFIRMED
+// The demo table lives in module memory, so new rows reset on a full reload.
+// TODO(api): replace with POST /appointments
+let nextAppointmentId = Math.max(...appointments.map((item) => item.appointment_id)) + 1;
+
+export function requestAppointment(input: {
+  doctor_id: number;
+  slot: TimeSlot;
+}): DemoAppointment {
+  const doctor =
+    doctors.find((item) => item.doctor_id === input.doctor_id) ?? doctors[0]!;
+  const row: DemoAppointment = {
+    appointment_id: nextAppointmentId++,
+    patient_id: 52,
+    doctor_id: input.doctor_id,
+    slot_id: input.slot.slot_id,
+    status: "BOOKED",
+    reason: "New appointment request",
+    created_at: `${input.slot.slot_date}T09:05:52`,
+    updated_at: `${DEMO_NOW}`,
+    patient_name: "Demo Patient",
+    doctor_name: doctor.full_name,
+    specialty: doctor.specialty ?? "General Medicine",
+    slot_date: input.slot.slot_date,
+    start_time: input.slot.start_time,
+    end_time: input.slot.end_time,
+    department_name: doctor.department_name ?? "General Medicine",
+  };
+  appointments.push(row);
+  return row;
+}
+
+// TODO(api): replace with PATCH /appointments/:id (status -> CONFIRMED)
+export function confirmAppointment(appointmentId: number): DemoAppointment | null {
+  const row = appointments.find(
+    (item) => item.appointment_id === appointmentId,
+  );
+  if (!row || row.status !== "BOOKED") return null;
+  row.status = "CONFIRMED";
+  row.updated_at = `${DEMO_NOW}`;
+  return row;
+}
+
 // TODO(api): replace with GET /appointments/next
 export const nextAppointment: DemoAppointment | null = todayAppointments.find(
   (item) => item.start_time >= "10:30",
@@ -418,7 +464,7 @@ export function getSlots(doctorId: number): TimeSlot[] {
     times.map((start, timeIndex) => {
       const [hour = "09", minute = "00"] = start.split(":");
       const endHour =
-        minute === "30" ? hour : String(Number(hour) + 1).padStart(2, "0");
+        minute === "30" ? String(Number(hour) + 1).padStart(2, "0") : hour;
       const endMinute = minute === "30" ? "00" : "30";
       return {
         slot_id: id++,

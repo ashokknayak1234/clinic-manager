@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getDoctor, getSlots } from "@/features/api/mock";
+import { getDoctor, getSlots, requestAppointment } from "@/features/api/mock";
 import { formatCurrency, formatShortDate, formatTime, initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -136,10 +136,13 @@ export function BookingView() {
             {confirmed && (
               <p
                 role="status"
-                className="mt-4 flex items-center gap-2 rounded-md bg-success-bg px-3 py-2 text-[12px] text-status-confirmed"
+                className="mt-4 flex items-start gap-2 rounded-md bg-warning-bg px-3 py-2 text-[12px] text-status-booked"
               >
-                <Check className="size-4" aria-hidden="true" />
-                Appointment request recorded for the demo workspace.
+                <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                <span>
+                  Request recorded for the demo workspace — it stays{" "}
+                  <strong>Booked</strong> until clinic staff confirm it.
+                </span>
               </p>
             )}
           </section>
@@ -227,9 +230,14 @@ export function BookingView() {
             <Button
               variant="accent"
               onClick={() => {
+                if (!selected) return;
+                requestAppointment({
+                  doctor_id: doctorId,
+                  slot: selected,
+                });
                 setOpen(false);
                 setConfirmed(true);
-                toast.success("Appointment request recorded for the demo workspace.");
+                toast.success("Appointment request recorded — waiting for staff confirmation.");
               }}
             >
               Confirm

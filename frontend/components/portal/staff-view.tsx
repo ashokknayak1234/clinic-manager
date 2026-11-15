@@ -83,7 +83,13 @@ export function StaffView() {
         {staffQueue.map((queue) => (
           <Link
             key={queue.id}
-            href={queue.id === 1 ? "/appointments" : queue.id === 2 ? "/invoices" : "/prescriptions"}
+            href={
+              queue.id === 1
+                ? "/appointments?status=BOOKED"
+                : queue.id === 2
+                  ? "/invoices"
+                  : "/prescriptions"
+            }
             className="group rounded-xl border border-line bg-surface p-5 transition-[transform,box-shadow] duration-200 hover:-translate-y-[3px] hover:shadow-md"
           >
             <div className="flex items-start justify-between gap-3">

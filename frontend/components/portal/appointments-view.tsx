@@ -26,10 +26,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { appointments, type DemoAppointment } from "@/features/api/mock";
+import { appointments, confirmAppointment, type DemoAppointment } from "@/features/api/mock";
 import { DEMO_TODAY } from "@/lib/demo-clock";
 import { formatShortDate, formatTime } from "@/lib/format";
 import type { AppointmentStatus } from "@/shared/apiTypes";
+import { useAuth } from "@/providers/auth-provider";
+import { toast } from "sonner";
+import { Check } from "lucide-react";
 
 const statusOptions: Array<{ value: AppointmentStatus | "all"; label: string }> = [
   { value: "all", label: "All statuses" },
@@ -53,9 +56,15 @@ type SortKey = "date" | "patient" | "status";
 export function AppointmentsView() {
   const searchParams = useSearchParams();
   const paramSearch = searchParams.get("search") ?? "";
+  const paramStatus: AppointmentStatus | "all" =
+    searchParams.get("status") === "BOOKED" ? "BOOKED" : "all";
+  const { user } = useAuth();
+  const isStaff = user ? user.role !== "PATIENT" : false;
+  const isPatient = (user?.role ?? "PATIENT") === "PATIENT";
   const [search, setSearch] = useState(paramSearch);
   const [syncedParam, setSyncedParam] = useState(paramSearch);
-  const [status, setStatus] = useState<AppointmentStatus | "all">("all");
+  const [status, setStatus] = useState<AppointmentStatus | "all">(paramStatus);
+  const [syncedStatus, setSyncedStatus] = useState(paramStatus);
   const [sort, setSort] = useState<SortKey>("date");
   const [overrides, setOverrides] = useState<Record<number, AppointmentStatus>>({});
   const [cancelTarget, setCancelTarget] = useState<DemoAppointment | null>(null);
@@ -67,6 +76,13 @@ export function AppointmentsView() {
   if (paramSearch !== syncedParam) {
     setSyncedParam(paramSearch);
     setSearch(paramSearch);
+  }
+  // Same re-sync for the deep-linked status filter (?status=BOOKED from the
+  // staff queue card): when the URL parameter changes (or disappears),
+  // follow it so a plain sidebar click always shows every appointment.
+  if (paramStatus !== syncedStatus) {
+    setSyncedStatus(paramStatus);
+    setStatus(paramStatus);
   }
 
   const rows = useMemo(() => {
@@ -129,8 +145,31 @@ export function AppointmentsView() {
       key: "actions",
       header: "Action",
       className: "text-right",
-      render: (row) =>
-        cancellable(row) ? (
+      render: (row) => {
+        const confirmable = isStaff && row.status === "BOOKED";
+        if (confirmable) {
+          return (
+            <Button
+              variant="ghost"
+              size="xs"
+              className="text-status-confirmed hover:bg-success-bg"
+              onClick={() => {
+                confirmAppointment(row.appointment_id);
+                setOverrides((prev) => ({
+                  ...prev,
+                  [row.appointment_id]: "CONFIRMED",
+                }));
+                toast.success(
+                  `Appointment confirmed for ${row.patient_name} (demo table).`,
+                );
+              }}
+            >
+              <Check className="size-3.5" aria-hidden="true" />
+              Confirm
+            </Button>
+          );
+        }
+        return cancellable(row) ? (
           <Button
             variant="ghost"
             size="xs"
@@ -144,7 +183,8 @@ export function AppointmentsView() {
           </Button>
         ) : (
           <span className="text-[12px] text-ink-faint">—</span>
-        ),
+        );
+      },
     },
   ];
 
@@ -155,9 +195,11 @@ export function AppointmentsView() {
         title="Appointments"
         subtitle="Filter, review, and cancel upcoming demo appointments."
         actions={
-          <Button asChild variant="secondary">
-            <Link href="/doctors">Request appointment</Link>
-          </Button>
+          isPatient ? (
+            <Button asChild variant="secondary">
+              <Link href="/doctors">Request appointment</Link>
+            </Button>
+          ) : undefined
         }
       />
       <DemoBanner />

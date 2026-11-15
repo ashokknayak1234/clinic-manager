@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Bell, ChevronDown, LogOut, Mail, Menu, Search, UserRound, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ export function Topbar({
   onMenu: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuth();
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -53,6 +54,15 @@ export function Topbar({
     event.preventDefault();
     const value = query.trim();
     router.push(value ? `/appointments?search=${encodeURIComponent(value)}` : "/appointments");
+  }
+
+  // Clearing the input from /appointments must also drop the ?search= filter,
+  // otherwise the table stays filtered while the box looks empty.
+  function onClearSearch() {
+    setQuery("");
+    if (pathname === "/appointments") {
+      router.push("/appointments");
+    }
   }
 
   function onLogout() {
@@ -93,7 +103,7 @@ export function Topbar({
           {query && (
             <button
               type="button"
-              onClick={() => setQuery("")}
+              onClick={onClearSearch}
               aria-label="Clear search"
               className="absolute top-1/2 right-2 flex size-7 -translate-y-1/2 items-center justify-center rounded-sm text-ink-muted hover:bg-subtle hover:text-ink"
             >

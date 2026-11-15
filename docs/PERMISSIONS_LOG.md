@@ -69,3 +69,7 @@ plus what was authorized and when. Newest entries at the bottom. Companion to
 - **Excluded from the push:** local-only runtime artifacts (`frontend/node_modules/`,
   `frontend/.next/`, temp scripts) per `.gitignore`; no secrets were committed
   (`.env.example` only).
+
+## 2026-11-15
+
+- Pushed commit 843ef11 (role-based appointment workflow + React Bits PillNav) to origin/feat/nextjs-frontend and, per the standing owner instruction to keep both branches in sync, fast-forwarded origin/main from 615b46e to 843ef11 using --force-with-lease. No other permissions taken.

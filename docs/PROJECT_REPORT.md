@@ -196,3 +196,43 @@ cd frontend && npm install && npm run dev
 ```
 
 Production build: `cd frontend && npm run build && npm start`.
+
+---
+
+## 8. Screenshots (desktop, 1440×900 viewport)
+
+### Marketing landing page — React Bits PillNav header
+
+![Landing page with PillNav](screens/report-landing-1440.png)
+
+### Sign-in page (demo credentials shown, real JWT backend)
+
+![Login page](screens/report-login-1440.png)
+
+### Patient dashboard ("Welcome back, Demo")
+
+![Patient dashboard](screens/report-dashboard-1440.png)
+
+### Doctors list (patient view — Book buttons visible)
+
+![Doctors list](screens/report-doctors-1440.png)
+
+### Booking page — date + slot selected, live summary
+
+![Booking page](screens/report-booking-1440.png)
+
+### Patient's appointments — new request sits as "Booked" (pending)
+
+![Patient appointments](screens/report-appointments-patient-1440.png)
+
+### Staff panel — queue cards (appointment requests deep-link to the Booked filter)
+
+![Staff panel](screens/report-staff-1440.png)
+
+### Staff queue — Booked filter with per-row Confirm action
+
+![Staff queue](screens/report-staff-queue-1440.png)
+
+### API health — live FastAPI + MySQL checks
+
+![API health](screens/report-health-1440.png)

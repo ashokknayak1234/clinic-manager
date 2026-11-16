@@ -4,12 +4,17 @@ import { HeartIllustration } from "@/components/marketing/heart-illustration";
 import { TelemetryCard } from "@/components/marketing/telemetry-card";
 import { Reveal } from "@/components/motion/reveal";
 import {
-  appointmentsToday,
-  nextAppointment,
-  pendingRequests,
+  getAppointmentsToday,
+  getNextAppointment,
+  getPendingRequests,
 } from "@/features/api/mock";
+import { formatTime } from "@/lib/format";
 
 export function AboutTelemetry() {
+  const appointmentsToday = getAppointmentsToday();
+  const nextAppointment = getNextAppointment();
+  const pendingRequests = getPendingRequests();
+
   return (
     <section id="about" className="scroll-mt-24 bg-surface">
       <div className="container-marketing grid items-center gap-14 py-14 md:py-[72px] lg:grid-cols-[42fr_58fr] lg:py-24">
@@ -56,7 +61,7 @@ export function AboutTelemetry() {
             <div className="absolute bottom-0 left-6 hidden lg:block">
               <TelemetryCard
                 label="Next visit"
-                value={nextAppointment?.start_time ?? "10:30"}
+                value={formatTime(nextAppointment?.start_time ?? "10:30")}
                 variant="line"
                 values={[4, 10, 6, 12, 8, 14, 10, 13]}
               />
@@ -85,7 +90,7 @@ export function AboutTelemetry() {
               />
               <TelemetryCard
                 label="Next visit"
-                value={nextAppointment?.start_time ?? "10:30"}
+                value={formatTime(nextAppointment?.start_time ?? "10:30")}
                 variant="line"
                 values={[4, 10, 6, 12, 8, 14, 10, 13]}
                 className="w-full"

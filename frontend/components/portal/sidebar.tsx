@@ -15,6 +15,7 @@ import { Logo } from "@/components/brand/logo";
 import { PromoCard } from "@/components/portal/promo-card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/providers/auth-provider";
+import { displayNameForUser, roleLabels } from "@/lib/demo-user";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/shared/apiTypes";
@@ -37,20 +38,6 @@ const staffNav: NavItem[] = [
 function navFor(role: Role): NavItem[] {
   return role === "PATIENT" ? patientNav : staffNav;
 }
-
-const displayNames: Partial<Record<Role, string>> = {
-  PATIENT: "Demo Patient",
-  DOCTOR: "Dr. Demo Doctor",
-  ADMIN: "Demo Admin",
-  RECEPTIONIST: "Demo Reception",
-};
-
-const roleLabels: Record<Role, string> = {
-  ADMIN: "Administrator",
-  DOCTOR: "Doctor",
-  RECEPTIONIST: "Receptionist",
-  PATIENT: "Patient",
-};
 
 function NavLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -89,11 +76,8 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuth();
   const role = user?.role ?? "PATIENT";
   const items = navFor(role);
-  const nameByRole = displayNames[role] ?? "Demo User";
   const displayName = user?.email
-    ? role === "PATIENT"
-      ? nameByRole
-      : nameByRole
+    ? displayNameForUser(user, role)
     : "Demo User";
 
   return (

@@ -30,6 +30,10 @@ class UserMe(BaseModel):
     email: str
     role: str
     is_active: bool
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    patient_id: Optional[int] = None
+    doctor_id: Optional[int] = None
 
     class Config:
         from_attributes = True

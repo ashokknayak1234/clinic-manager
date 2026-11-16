@@ -20,22 +20,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/providers/auth-provider";
+import { displayNameForUser, roleLabels } from "@/lib/demo-user";
 import { initials } from "@/lib/format";
-import type { Role } from "@/shared/apiTypes";
-
-const displayNames: Record<Role, string> = {
-  ADMIN: "Demo Admin",
-  DOCTOR: "Dr. Demo Doctor",
-  RECEPTIONIST: "Demo Reception",
-  PATIENT: "Demo Patient",
-};
-
-const roleLabels: Record<Role, string> = {
-  ADMIN: "Administrator",
-  DOCTOR: "Doctor",
-  RECEPTIONIST: "Receptionist",
-  PATIENT: "Patient",
-};
 
 export function Topbar({
   onMenu,
@@ -48,7 +34,7 @@ export function Topbar({
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const role = user?.role ?? "PATIENT";
-  const name = displayNames[role];
+  const name = displayNameForUser(user, role);
 
   function onSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -169,7 +155,6 @@ export function Topbar({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label="Account menu"
               className="flex items-center gap-2.5 rounded-md p-1 transition-colors hover:bg-subtle"
             >
               <Avatar className="size-11 shrink-0 rounded-md after:hidden">
@@ -184,6 +169,7 @@ export function Topbar({
                 <span className="block text-[11px] text-ink-muted">{roleLabels[role]}</span>
               </span>
               <ChevronDown className="hidden size-4 text-ink-faint lg:block" aria-hidden="true" />
+              <span className="sr-only">Account menu</span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
@@ -200,16 +186,6 @@ export function Topbar({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onLogout}
-          aria-label="Sign out"
-          className="bg-surface"
-        >
-          <LogOut className="size-5" aria-hidden="true" />
-        </Button>
       </div>
     </div>
   );

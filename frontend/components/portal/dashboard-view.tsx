@@ -16,14 +16,16 @@ import { EmptyState } from "@/components/portal/empty-state";
 import { CalendarX } from "lucide-react";
 import {
   activeDoctors,
-  appointmentsToday,
-  nextAppointment,
-  pendingRequests,
+  getAppointmentsToday,
+  getNextAppointment,
+  getTodayAppointments,
   registeredPatients,
-  todayAppointments,
 } from "@/features/api/mock";
+import { useAppointments } from "@/features/api/use-appointments";
 import { DEMO_NOW } from "@/lib/demo-clock";
-import { formatWeekday } from "@/lib/format";
+import { displayNameForUser } from "@/lib/demo-user";
+import { formatShortDate, formatTime, formatWeekday } from "@/lib/format";
+import type { Role } from "@/shared/apiTypes";
 
 function overlineDate(): string {
   const day = DEMO_NOW.getUTCDate();
@@ -36,13 +38,20 @@ function overlineDate(): string {
 
 export function DashboardView() {
   const { user } = useAuth();
-  const isPatient = (user?.role ?? "PATIENT") === "PATIENT";
-  const title = isPatient ? "Welcome back, Demo" : "Clinic overview";
+  const role: Role = user?.role ?? "PATIENT";
+  const isPatient = role === "PATIENT";
+  const firstName = displayNameForUser(user, role).split(" ")[0];
+  const title = isPatient ? `Welcome back, ${firstName}` : "Clinic overview";
   const subtitle = isPatient
     ? "Here is your care at a glance."
     : "Monitor clinic activity and manage day-to-day operations.";
+  const nextAppointment = getNextAppointment();
+  const { appointments: liveAppointments } = useAppointments();
+  const pending = liveAppointments.filter(
+    (item) => item.status === "PENDING" || item.status === "BOOKED",
+  ).length;
 
-  const scheduleRows = todayAppointments.slice(0, 4).map((item) => ({
+  const scheduleRows = getTodayAppointments().slice(0, 4).map((item) => ({
     id: item.appointment_id,
     title: item.patient_name,
     subtitle: item.doctor_name,
@@ -77,7 +86,7 @@ export function DashboardView() {
         <StatCard
           gradient
           label="Appointments today"
-          value={appointmentsToday}
+          value={getAppointmentsToday()}
           caption="Across all providers · sample data"
         />
         <StatCard
@@ -92,7 +101,7 @@ export function DashboardView() {
         />
         <StatCard
           label="Pending requests"
-          value={pendingRequests}
+          value={pending}
           caption="Review in appointments"
         />
       </div>
@@ -119,7 +128,8 @@ export function DashboardView() {
                 {nextAppointment.doctor_name}
               </p>
               <p className="text-[13px] text-ink-muted">
-                Thu 12 Nov · {nextAppointment.start_time}
+                {formatShortDate(nextAppointment.slot_date)} ·{" "}
+                {formatTime(nextAppointment.start_time)}
               </p>
               <Button asChild variant="accent" className="mt-auto w-full">
                 <Link href="/appointments">View details</Link>

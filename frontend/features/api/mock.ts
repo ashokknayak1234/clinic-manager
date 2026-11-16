@@ -20,76 +20,79 @@ import type {
 
 // TODO(api): replace with GET /departments
 export const departments: Department[] = [
-  { department_id: 1, name: "Cardiology", description: "Heart and vascular care", is_active: true },
-  { department_id: 2, name: "Dermatology", description: "Skin, hair and nails", is_active: true },
-  { department_id: 3, name: "Orthopaedics", description: "Bones, joints and mobility", is_active: true },
-  { department_id: 4, name: "Paediatrics", description: "Care for children", is_active: true },
-  { department_id: 5, name: "General Medicine", description: "Everyday adult care", is_active: true },
+  { department_id: 1, name: "Family Medicine", description: "Everyday family care", is_active: true },
+  { department_id: 2, name: "Internal Medicine", description: "Adult chronic and preventive care", is_active: true },
+  { department_id: 3, name: "Cardiology", description: "Heart and vascular care", is_active: true },
+  { department_id: 4, name: "Endocrinology", description: "Hormone, diabetes and thyroid care", is_active: true },
+  { department_id: 5, name: "Orthopedics", description: "Bones, joints and mobility", is_active: true },
   { department_id: 6, name: "Neurology", description: "Brain and nervous system", is_active: true },
   { department_id: 7, name: "ENT", description: "Ear, nose and throat", is_active: true },
 ];
 
+// Doctor ids and names are aligned with the live `doctors` table so the named
+// demo logins below can be matched to their appointment rows. ids 6 and 7 are
+// fictional extras that intentionally have no login account.
 // TODO(api): replace with GET /doctors
 export const doctors: Doctor[] = [
   {
     doctor_id: 1,
-    user_id: 11,
+    user_id: 2,
     department_id: 1,
-    full_name: "Dr. Aarav Menon",
+    full_name: "Dr. Leena Das",
+    specialty: "Family Medicine",
+    profile_details: "Family physician · preventive care",
+    consultation_fee: 500,
+    is_active: true,
+    department_name: "Family Medicine",
+    next_available: "Today · 10:30 AM",
+  },
+  {
+    doctor_id: 2,
+    user_id: 3,
+    department_id: 2,
+    full_name: "Dr. Arjun Bose",
+    specialty: "Internal Medicine",
+    profile_details: "Internal medicine physician · chronic care",
+    consultation_fee: 600,
+    is_active: true,
+    department_name: "Internal Medicine",
+    next_available: "Today · 2:00 PM",
+  },
+  {
+    doctor_id: 3,
+    user_id: 4,
+    department_id: 3,
+    full_name: "Dr. Tara Dutta",
     specialty: "Cardiology",
     profile_details: "Consultant cardiologist · 12 years of practice",
     consultation_fee: 800,
     is_active: true,
     department_name: "Cardiology",
-    next_available: "Today · 10:30 AM",
-  },
-  {
-    doctor_id: 2,
-    user_id: 12,
-    department_id: 2,
-    full_name: "Dr. Leila Haddad",
-    specialty: "Dermatology",
-    profile_details: "Dermatologist · skin and laser care",
-    consultation_fee: 650,
-    is_active: true,
-    department_name: "Dermatology",
-    next_available: "Today · 2:00 PM",
-  },
-  {
-    doctor_id: 3,
-    user_id: 13,
-    department_id: 3,
-    full_name: "Dr. Tomas Reyes",
-    specialty: "Orthopaedics",
-    profile_details: "Orthopaedic surgeon · joint replacement",
-    consultation_fee: 700,
-    is_active: false,
-    department_name: "Orthopaedics",
-    next_available: "Mon 21 Nov · 9:00 AM",
-  },
-  {
-    doctor_id: 4,
-    user_id: 14,
-    department_id: 4,
-    full_name: "Dr. Priya Nair",
-    specialty: "Paediatrics",
-    profile_details: "Paediatrician · newborn and child health",
-    consultation_fee: 600,
-    is_active: true,
-    department_name: "Paediatrics",
     next_available: "Today · 11:45 AM",
   },
   {
-    doctor_id: 5,
-    user_id: 15,
-    department_id: 5,
-    full_name: "Dr. Kenji Sato",
-    specialty: "General Medicine",
-    profile_details: "General physician · preventive care",
-    consultation_fee: 500,
+    doctor_id: 4,
+    user_id: 5,
+    department_id: 4,
+    full_name: "Dr. Samir Rao",
+    specialty: "Endocrinology",
+    profile_details: "Endocrinologist · diabetes and thyroid care",
+    consultation_fee: 700,
     is_active: true,
-    department_name: "General Medicine",
+    department_name: "Endocrinology",
     next_available: "Today · 12:15 PM",
+  },
+  {
+    doctor_id: 5,
+    user_id: 6,
+    department_id: 5,
+    full_name: "Dr. Aarav Das",
+    specialty: "Orthopedics",
+    profile_details: "Orthopaedic surgeon · joint replacement",
+    consultation_fee: 750,
+    is_active: true,
+    department_name: "Orthopedics",
+    next_available: "Today · 1:10 PM",
   },
   {
     doctor_id: 6,
@@ -101,7 +104,7 @@ export const doctors: Doctor[] = [
     consultation_fee: 900,
     is_active: true,
     department_name: "Neurology",
-    next_available: "Today · 1:10 PM",
+    next_available: "Today · 3:30 PM",
   },
   {
     doctor_id: 7,
@@ -113,13 +116,24 @@ export const doctors: Doctor[] = [
     consultation_fee: 550,
     is_active: true,
     department_name: "ENT",
-    next_available: "Today · 3:30 PM",
+    next_available: "Today · 4:00 PM",
   },
 ];
 
 // TODO(api): replace with GET /doctors/:id
 export function getDoctor(doctorId: number): Doctor | undefined {
   return doctors.find((doctor) => doctor.doctor_id === doctorId);
+}
+
+/**
+ * Named doctor logins are matched to the mock roster by their joined
+ * `full_name`. Returns undefined for the generic `doctor@demo.com` account,
+ * which intentionally keeps clinic-wide demo access.
+ */
+export function getDoctorByFullName(fullName: string | null | undefined): Doctor | undefined {
+  const name = fullName?.trim().toLowerCase();
+  if (!name) return undefined;
+  return doctors.find((doctor) => doctor.full_name.toLowerCase() === name);
 }
 
 // TODO(api): replace with GET /care-team
@@ -184,37 +198,49 @@ export const appointments: DemoAppointment[] = [
   appointment(17, "Demo Patient", 1, "09:00", "09:20", "CONFIRMED", "2026-11-19"),
 ];
 
+// Read through functions, never module-level snapshots: requestAppointment()
+// and confirmAppointment() mutate the live array, and the dashboard/staff KPIs
+// must reflect that when the screen is revisited.
 // TODO(api): replace with GET /appointments?date=today
-export const todayAppointments = appointments.filter(
-  (item) => item.slot_date === DEMO_TODAY,
-);
+export function getTodayAppointments(): DemoAppointment[] {
+  return appointments.filter((item) => item.slot_date === DEMO_TODAY);
+}
 
 // TODO(api): replace with GET /dashboard/summary
 export const weeklyAppointments = [8, 11, 9, 12, 14, 6, 4] as const;
 export const weekLabels = ["M", "T", "W", "T", "F", "S", "S"] as const;
 
-export const appointmentsToday = todayAppointments.length;
 export const registeredPatients = 24;
 export const activeDoctors = doctors.filter((doctor) => doctor.is_active).length;
-export const pendingRequests = appointments.filter(
-  (item) => item.status === "BOOKED",
-).length;
 
-export function todaysStatusCounts() {
+export function getAppointmentsToday(): number {
+  return getTodayAppointments().length;
+}
+
+export function getPendingRequests(): number {
+  return appointments.filter(
+    (item) => item.status === "PENDING" || item.status === "BOOKED",
+  ).length;
+}
+
+export function getTodaysStatusCounts(): Record<AppointmentStatus, number> {
   const counts: Record<AppointmentStatus, number> = {
+    PENDING: 0,
     BOOKED: 0,
     CONFIRMED: 0,
     COMPLETED: 0,
     CANCELLED: 0,
     NO_SHOW: 0,
   };
-  for (const item of todayAppointments) counts[item.status] += 1;
+  for (const item of getTodayAppointments()) counts[item.status] += 1;
   return counts;
 }
 
-export function completionPercent(): number {
-  const counts = todaysStatusCounts();
-  return Math.round((counts.COMPLETED / appointmentsToday) * 100);
+export function getCompletionPercent(): number {
+  const total = getAppointmentsToday();
+  if (total === 0) return 0;
+  const counts = getTodaysStatusCounts();
+  return Math.round((counts.COMPLETED / total) * 100);
 }
 
 // ---------------------------------------------------------------------------
@@ -228,19 +254,22 @@ let nextAppointmentId = Math.max(...appointments.map((item) => item.appointment_
 export function requestAppointment(input: {
   doctor_id: number;
   slot: TimeSlot;
+  patient: { user_id: number; name: string; email: string; phone?: string | null };
 }): DemoAppointment {
   const doctor =
     doctors.find((item) => item.doctor_id === input.doctor_id) ?? doctors[0]!;
   const row: DemoAppointment = {
     appointment_id: nextAppointmentId++,
-    patient_id: 52,
+    patient_id: input.patient.user_id + 1000,
     doctor_id: input.doctor_id,
     slot_id: input.slot.slot_id,
     status: "BOOKED",
     reason: "New appointment request",
     created_at: `${input.slot.slot_date}T09:05:52`,
-    updated_at: `${DEMO_NOW}`,
-    patient_name: "Demo Patient",
+    updated_at: DEMO_NOW.toISOString(),
+    patient_name: input.patient.name,
+    patient_email: input.patient.email,
+    patient_phone: input.patient.phone ?? null,
     doctor_name: doctor.full_name,
     specialty: doctor.specialty ?? "General Medicine",
     slot_date: input.slot.slot_date,
@@ -259,18 +288,18 @@ export function confirmAppointment(appointmentId: number): DemoAppointment | nul
   );
   if (!row || row.status !== "BOOKED") return null;
   row.status = "CONFIRMED";
-  row.updated_at = `${DEMO_NOW}`;
+  row.updated_at = DEMO_NOW.toISOString();
   return row;
 }
 
 // TODO(api): replace with GET /appointments/next
-export const nextAppointment: DemoAppointment | null = todayAppointments.find(
-  (item) => item.start_time >= "10:30",
-) ?? null;
+export function getNextAppointment(): DemoAppointment | null {
+  return getTodayAppointments().find((item) => item.start_time >= "10:30") ?? null;
+}
 
 /** 10:30:00 − 09:05:52 is a frozen readout, not a ticking timer. */
 export function countdownToNextAppointment(): string {
-  const [hours = 0, minutes = 0] = (nextAppointment?.start_time ?? "10:30")
+  const [hours = 0, minutes = 0] = (getNextAppointment()?.start_time ?? "10:30")
     .split(":")
     .map(Number);
   const target = new Date(DEMO_NOW);
@@ -294,7 +323,7 @@ export const prescriptions: Prescription[] = [
     notes: "Continue for 30 days. Review after the next visit.",
     created_at: "2026-11-12T09:20:00",
     patient_name: "Demo Patient",
-    doctor_name: "Dr. Aarav Menon",
+    doctor_name: "Dr. Leena Das",
     items: [
       {
         prescription_item_id: 1,
@@ -325,7 +354,7 @@ export const prescriptions: Prescription[] = [
     notes: "Rest and hydration recommended.",
     created_at: "2026-11-10T10:20:00",
     patient_name: "Demo Patient",
-    doctor_name: "Dr. Kenji Sato",
+    doctor_name: "Dr. Aarav Das",
     items: [
       {
         prescription_item_id: 3,
@@ -346,7 +375,7 @@ export const prescriptions: Prescription[] = [
     notes: "Paediatric dose — confirm weight at visit.",
     created_at: "2026-11-08T09:40:00",
     patient_name: "Asha Verma",
-    doctor_name: "Dr. Priya Nair",
+    doctor_name: "Dr. Samir Rao",
     items: [
       {
         prescription_item_id: 4,
@@ -374,8 +403,8 @@ export const invoices: Invoice[] = [
     paid_amount: 1200,
     balance_amount: 0,
     patient_name: "Demo Patient",
-    doctor_name: "Dr. Aarav Menon",
-    service_name: "Cardiology consultation",
+    doctor_name: "Dr. Leena Das",
+    service_name: "Family Medicine consultation",
   },
   {
     invoice_id: 1002,
@@ -387,7 +416,7 @@ export const invoices: Invoice[] = [
     paid_amount: 0,
     balance_amount: 950,
     patient_name: "Ravi Kumar",
-    doctor_name: "Dr. Aarav Menon",
+    doctor_name: "Dr. Leena Das",
     service_name: "ECG and consultation",
   },
   {
@@ -400,7 +429,7 @@ export const invoices: Invoice[] = [
     paid_amount: 400,
     balance_amount: 400,
     patient_name: "Meera Iyer",
-    doctor_name: "Dr. Priya Nair",
+    doctor_name: "Dr. Samir Rao",
     service_name: "Paediatric review",
   },
   {
@@ -413,8 +442,8 @@ export const invoices: Invoice[] = [
     paid_amount: 0,
     balance_amount: 1100,
     patient_name: "Karan Singh",
-    doctor_name: "Dr. Kenji Sato",
-    service_name: "General consultation",
+    doctor_name: "Dr. Aarav Das",
+    service_name: "Orthopedic consultation",
   },
   {
     invoice_id: 1005,
@@ -426,8 +455,8 @@ export const invoices: Invoice[] = [
     paid_amount: 500,
     balance_amount: 0,
     patient_name: "Asha Verma",
-    doctor_name: "Dr. Priya Nair",
-    service_name: "Vaccination review",
+    doctor_name: "Dr. Samir Rao",
+    service_name: "Endocrine review",
   },
   {
     invoice_id: 1006,
@@ -459,6 +488,18 @@ export const invoiceSummary = invoices.reduce(
 export function getSlots(doctorId: number): TimeSlot[] {
   const dates = ["2026-11-13", "2026-11-14", "2026-11-17", "2026-11-18", "2026-11-19"];
   const times = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "14:30"];
+  // A slot that already has a live appointment (this session or canonical
+  // data) must not be offered again, otherwise the same time can be requested
+  // twice from the booking screen.
+  const taken = new Set(
+    appointments
+      .filter(
+        (item) =>
+          item.doctor_id === doctorId &&
+          (item.status === "BOOKED" || item.status === "CONFIRMED"),
+      )
+      .map((item) => `${item.slot_date}T${item.start_time}`),
+  );
   let id = 1;
   return dates.flatMap((date, dateIndex) =>
     times.map((start, timeIndex) => {
@@ -472,7 +513,9 @@ export function getSlots(doctorId: number): TimeSlot[] {
         slot_date: date,
         start_time: start,
         end_time: `${endHour}:${endMinute}`,
-        is_available: (dateIndex + timeIndex) % 5 !== 0,
+        is_available:
+          (dateIndex + timeIndex) % 5 !== 0 &&
+          !taken.has(`${date}T${start}`),
       };
     }),
   );

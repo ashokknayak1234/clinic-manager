@@ -54,7 +54,7 @@ export function AuthVisual() {
 
       <Link
         href="/"
-        className="absolute top-8 left-8 text-[12px] font-medium text-primary-600 hover:text-primary-700"
+        className="absolute top-8 left-8 text-[12px] font-medium text-primary-700 hover:text-ink"
       >
         Care teams, connected.
       </Link>

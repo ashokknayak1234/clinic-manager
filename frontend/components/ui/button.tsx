@@ -8,8 +8,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        // primary-600 keeps white label text above 4.5:1; primary-500 is 3.51.
         default:
-          "bg-primary-500 text-white shadow-sm hover:bg-primary-600 active:bg-primary-700",
+          "bg-primary-600 text-white shadow-sm hover:bg-primary-700 active:bg-primary-700",
         accent:
           "bg-accent-500 text-white shadow-sm hover:bg-accent-600 active:bg-accent-700",
         secondary:

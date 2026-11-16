@@ -1,9 +1,11 @@
 import type {
   ApiResponse,
+  Appointment,
   DatabaseHealth,
   HealthStatus,
   LoginRequest,
   RegisterRequest,
+  TimeSlot,
   TokenResponse,
   User,
 } from "@/shared/apiTypes";
@@ -133,6 +135,12 @@ export const apiClient = {
       body: JSON.stringify(body),
     });
   },
+  patch<T>(endpoint: string, body: unknown = {}) {
+    return request<T>(endpoint, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+  },
   async login(credentials: LoginRequest) {
     const response = await request<TokenResponse>("/auth/login", {
       method: "POST",
@@ -158,6 +166,30 @@ export const apiClient = {
   },
   me() {
     return request<User>("/auth/me", { method: "GET" });
+  },
+  getAppointments() {
+    return request<Appointment[]>("/appointments", { method: "GET" });
+  },
+  createAppointment(input: { doctor_id: number; slot_id: number; reason?: string }) {
+    return request<Appointment>("/appointments", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  },
+  confirmAppointment(appointmentId: number) {
+    return request<Appointment>(`/appointments/${appointmentId}/confirm`, {
+      method: "PATCH",
+      body: "{}",
+    });
+  },
+  cancelAppointment(appointmentId: number) {
+    return request<Appointment>(`/appointments/${appointmentId}/cancel`, {
+      method: "PATCH",
+      body: "{}",
+    });
+  },
+  getDoctorSlots(doctorId: number) {
+    return request<TimeSlot[]>(`/doctors/${doctorId}/slots`, { method: "GET" });
   },
   health() {
     return request<HealthStatus>("/health", { method: "GET" });

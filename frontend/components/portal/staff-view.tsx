@@ -8,13 +8,14 @@ import { StatCard } from "@/components/portal/stat-card";
 import { ScheduleHeader, ScheduleList } from "@/components/portal/schedule-list";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/providers/auth-provider";
+import { useAppointments } from "@/features/api/use-appointments";
 import {
   activeDoctors,
-  appointmentsToday,
-  pendingRequests,
+  doctors,
+  getAppointmentsToday,
+  getTodayAppointments,
   registeredPatients,
   staffQueue,
-  todayAppointments,
 } from "@/features/api/mock";
 import type { Role } from "@/shared/apiTypes";
 
@@ -34,7 +35,20 @@ const tones = {
 export function StaffView() {
   const { user } = useAuth();
   const role = user?.role ?? "RECEPTIONIST";
-  const scheduleRows = todayAppointments.slice(0, 4).map((item) => ({
+  const { appointments: liveAppointments } = useAppointments();
+  const pending = liveAppointments.filter(
+    (item) => item.status === "PENDING" || item.status === "BOOKED",
+  ).length;
+  const queueItems = staffQueue.map((item) =>
+    item.id === 1
+      ? {
+          ...item,
+          count: pending,
+          detail: `${pending} new request${pending === 1 ? "" : "s"} waiting for review`,
+        }
+      : item,
+  );
+  const scheduleRows = getTodayAppointments().slice(0, 4).map((item) => ({
     id: item.appointment_id,
     title: item.patient_name,
     subtitle: item.doctor_name,
@@ -59,18 +73,18 @@ export function StaffView() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Appointments today"
-          value={appointmentsToday}
+          value={getAppointmentsToday()}
           caption="Across all providers · sample data"
         />
         <StatCard
           label="Pending requests"
-          value={pendingRequests}
+          value={pending}
           caption="Review in appointments"
         />
         <StatCard
           label="Active doctors"
           value={activeDoctors}
-          caption="1 provider on leave · demo"
+          caption={`${activeDoctors} of ${doctors.length} providers active · demo`}
         />
         <StatCard
           label="Registered patients"
@@ -80,12 +94,12 @@ export function StaffView() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
-        {staffQueue.map((queue) => (
+        {queueItems.map((queue) => (
           <Link
             key={queue.id}
             href={
               queue.id === 1
-                ? "/appointments?status=BOOKED"
+                ? "/appointments?status=PENDING"
                 : queue.id === 2
                   ? "/invoices"
                   : "/prescriptions"

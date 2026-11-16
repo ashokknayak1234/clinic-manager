@@ -1,34 +1,35 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { todaysStatusCounts, todayAppointments } from "@/features/api/mock";
+import { getTodayAppointments, getTodaysStatusCounts } from "@/features/api/mock";
 
 export function Gauge() {
   const reduced = useReducedMotion();
-  const counts = todaysStatusCounts();
-  const total = todayAppointments.length;
+  const counts = getTodaysStatusCounts();
+  const total = getTodayAppointments().length;
   const completed = counts.COMPLETED;
   const inProgress = counts.CONFIRMED;
-  const remaining = total - completed - inProgress;
-  const percent = Math.round((completed / total) * 100);
+  const remaining = Math.max(0, total - completed - inProgress);
+  const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   const radius = 92;
   const circumference = Math.PI * radius;
+  const safeTotal = total || 1;
 
   const segments = [
     {
       key: "completed",
-      fraction: completed / total,
+      fraction: completed / safeTotal,
       color: "var(--color-accent-500)",
     },
     {
       key: "in-progress",
-      fraction: inProgress / total,
+      fraction: inProgress / safeTotal,
       color: "var(--color-navy-700)",
     },
     {
       key: "remaining",
-      fraction: remaining / total,
+      fraction: remaining / safeTotal,
       color: "var(--color-accent-200)",
     },
   ];

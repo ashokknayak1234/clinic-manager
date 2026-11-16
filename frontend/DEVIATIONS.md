@@ -265,3 +265,237 @@ clicking the plain sidebar "Appointments" link left the Booked filter applied be
 the client-side navigation to the same route does not remount the view. The view now
 re-syncs the status filter with the URL parameter (same pattern already used for
 `?search=`), so a plain link always shows every appointment.
+
+---
+
+## 2026-11-16
+
+### 18. UI audit fixes — palette contrast amended, plus accessibility/state bugs
+
+Owner asked to "check my ui in frontend and fix all the things in code". The audit covered
+every route, both themes of the portal shell, the auth screens and the marketing page. All
+changes are in `frontend/`; no API, backend or database files were touched. Gate results are
+at the end of this entry.
+
+**Palette contrast (amends entry 6, owner-authorized by this request).** Entry 6 kept the
+binding §5.1 greys and left the failing pairings unresolved pending an owner decision. This
+request supplied that decision. Two tokens in `app/globals.css` were darkened:
+
+| Token | Was | Now | Reason |
+| --- | --- | --- | --- |
+| `--color-ink-muted` | `#71757F` | `#5C626F` | ≥4.5:1 on surface, marketing, panel, subtle, primary-50, warning-bg and error-bg |
+| `--color-ink-faint` | `#9CA3AF` | `#646A77` | was 2.54:1 on white for 12px captions |
+| shadcn `--muted-foreground` | `#71757F` | `#5C626F` | kept in step with `ink-muted` |
+
+Other contrast fixes:
+
+- Default `Button` fill moved from `primary-500` to `primary-600` (white text 4.72:1 vs
+  3.51:1); hover/active both use `primary-700`. The marketing hero "Workspaces" card was
+  moved from `bg-primary-500` to `bg-primary-600` for the same reason.
+- The auth-visual link "Care teams, connected." moved from `text-primary-600` to
+  `text-primary-700` on its `primary-50` panel.
+
+This is a deliberate departure from the literal §5.1 hex list, recorded here per the
+append-only rule. `app/globals.css` remains the single source of colour.
+
+**Shared demo identity.** `lib/demo-user.ts` now owns `displayNames` and `roleLabels`. The
+topbar, sidebar, profile and dashboard previously duplicated (and slightly disagreed on)
+these maps; all four import the shared module. The dashboard title derives from the role's
+display name instead of the hardcoded "Welcome back, Demo".
+
+**Live mock data.** The mock KPI snapshots were frozen at module import, so confirming or
+requesting an appointment did not update the dashboard/staff views. They are now getter
+functions reading the live `appointments` array: `getTodayAppointments()`,
+`getAppointmentsToday()`, `getPendingRequests()`, `getNextAppointment()`,
+`getTodaysStatusCounts()` and `getCompletionPercent()`. Consumers were updated (dashboard,
+staff panel, gauge, marketing telemetry). A confirmed appointment therefore reduces
+"Pending requests" and the staff queue count on the next render. In-session mutations still
+reset on a full reload, as before.
+
+**Booking flow (patient).** `getSlots()` now excludes times that already have a `BOOKED` or
+`CONFIRMED` appointment for that doctor, so a slot cannot be requested twice from the
+booking screen. After a successful request the slot stays visible but disabled with a
+check icon and an `sr-only` "(requested)" suffix; selecting another date or slot clears the
+confirmation banner. The date buttons now say "Selected" instead of "Select" for the
+active date. The banner receives focus (`tabIndex={-1}`) when the dialog closes, because
+the confirm trigger is disabled after the request (previously focus fell back to the
+trigger and was effectively lost).
+
+**Forms.** Login inputs gained the missing `name` attributes (`email`, `password`,
+`remember`). Register validation no longer freezes the DOB maximum at `DEMO_TODAY`; it
+compares against the real wall clock so today's date is always valid, and the previously
+silent phone/address/emergency-contact/DOB errors are now rendered with `role="alert"` and
+wired via `aria-describedby`.
+
+**Accessibility and semantics.**
+
+- Auth layout wraps the form column in `<main>`, giving the auth screens a landmark.
+- The marketing header logo link lost its `aria-label="OpenClinic home"`, which conflicted
+  with the visible brand text (label-content-name mismatch).
+- Topbar account trigger: removed the `aria-label` that overrode the visible name/role and
+  added an `sr-only` "Account menu"; removed the duplicate standalone sign-out icon button
+  (sign-out remains in the account dropdown).
+- Prescriptions action column header changed from `""` to "Action" (empty header made the
+  action cell fail `td-has-header`).
+- Pill chart tooltips and visible week labels are `aria-hidden`; the `sr-only` summary
+  remains the accessible name, removing duplicate announcements.
+- Gauge guards divide-by-zero and negative remaining counts when there are no appointments.
+- `/appointments?status=…` accepts any valid status value, not only `BOOKED`.
+- `updated_at` on mock mutations now uses ISO strings (`DEMO_NOW.toISOString()`), matching
+  the canonical rows.
+
+**Verification (2026-11-16).**
+
+- `npx tsc --noEmit`, `npm run lint`, `npm run build` — all clean, 14 routes.
+- Lighthouse (desktop, navigation mode, production build): dashboard, prescriptions,
+  appointments, staff, marketing home, login and register all score **100 accessibility /
+  100 best-practices / 100 SEO**. The only remaining Lighthouse finding is CLS 0.192 in
+  the optional "Agentic Browsing" category (auth skeleton → content swap); it is not part
+  of the §13.6 gates.
+- Live interaction checks as `doctor@demo.com`: confirming a `BOOKED` row removes it from
+  the `?status=BOOKED` queue while the unfiltered table shows it as `Confirmed` with a
+  Cancel action, and the filter re-syncs to "All statuses" on plain sidebar navigation.
+  Patient booking (requested slot disabled + banner + toast), the cancel dialog, the
+  status deep link, and sign-out from the account dropdown were also re-verified.
+
+### 20. Patient registration role + named doctor approval workflow
+
+Owner report: registering a new patient bounced into "Demo Reception / Receptionist", other
+users could not see patient details but could see doctors, and named doctor accounts should
+be able to approve that patient's appointment. The owner explicitly authorized backend and
+database changes for this request, overriding the read-only labels in the project design.md
+for this scope only.
+
+**Root cause.** `backend/app/repositories/users.py` hardcoded `role_id = 4` when creating a
+patient. The live DB maps `1=ADMIN, 2=DOCTOR, 3=PATIENT, 4=RECEPTIONIST` (the seed order in
+`database/seed.sql` is different), so the JWT briefly said PATIENT but `/auth/me` reloaded
+RECEPTIONIST from MySQL and the client redirected to `/staff` with the Receptionist label.
+
+**Backend / database changes.**
+
+- `users.py`: registration now resolves the PATIENT `role_id` by name from the `roles` table
+  (3 in the live DB) instead of hard-coding a numeric id that differs from `seed.sql`.
+- `users.py::find_by_id` joins `doctors`/`patients` to return `full_name` and `phone`;
+  `schemas/auth.py::UserMe` exposes them. `/auth/me` response is therefore extended beyond
+  the original four fields. Admin-only accounts return nulls.
+- Repaired the two real registrations that already carried the wrong role
+  (`ashokstudent2007@gmail.com`, `khelogame2005@gmail.com` → PATIENT).
+- Activated the five existing doctor users (ids 2–6) and gave them named demo logins, all
+  password `doctor123`:
+
+  | Email | Joined profile |
+  | --- | --- |
+  | `leena.das@demo.com` | Dr. Leena Das |
+  | `arjun.bose@demo.com` | Dr. Arjun Bose |
+  | `tara.dutta@demo.com` | Dr. Tara Dutta |
+  | `samir.rao@demo.com` | Dr. Samir Rao |
+  | `aarav.das@demo.com` | Dr. Aarav Das |
+
+  `doctor@demo.com` remains the generic clinic-wide demo doctor. The one-off repair script
+  lived in the temp directory and was not added to the repository.
+
+**Frontend changes.**
+
+- `shared/apiTypes.ts`: `User` gained optional `full_name`/`phone`; `Appointment` gained
+  `patient_email`/`patient_phone`. `lib/demo-user.ts::displayNameForUser()` prefers the
+  joined name and falls back to the fixed role label, used by dashboard, topbar, sidebar,
+  profile and booking. The profile form's phone field starts from the joined phone.
+- `features/api/mock.ts`: doctor ids 1–5 and the departments now match the live DB rows;
+  Dr. Sofia Almeida and Dr. Marcus Bell (ids 6–7) remain fictional extras with no login.
+  Hardcoded prescription/invoice doctor names and service labels were updated to the same
+  roster. `getDoctorByFullName()` maps a named doctor login to its mock doctor id.
+  `requestAppointment()` now stores the logged-in patient's name, email and phone.
+- `components/portal/appointments-view.tsx`: patients see only requests whose captured email
+  (canonical rows: joined name) matches their account; named doctors see only appointments
+  assigned to their doctor id and can confirm only those rows; admin/receptionist and the
+  generic `doctor@demo.com` keep clinic-wide access. Staff rows show the patient email and
+  phone as a subline. Empty state and subtitle are role-aware.
+- `staff-view.tsx`: the "Active doctors" caption derives from `activeDoctors`/`doctors.length`
+  instead of the stale "1 provider on leave" text.
+- `login-form.tsx`: added the `leena.das@demo.com` example and a note listing the other
+  named doctors.
+
+**Known limits (deliberate).** Clinical data still comes from the in-session mock adapter;
+the role filtering is client-side and is not a server-side authorization boundary. The
+patient dashboard KPIs remain clinic-wide demo figures. A full page reload resets mock
+mutations, including new requests and confirmations. No patient directory was added, so
+staff see patient identity only on appointment rows, as requested.
+
+**Verification (2026-11-16).**
+
+- `py -3.14 -m compileall -q app`, `npx tsc --noEmit`, `npm run lint`, `npm run build` all
+  clean; 14 routes built.
+- Backend HTTP checks: named doctor login → `/auth/me` returns role DOCTOR and
+  `full_name: "Dr. Leena Das"`; patient login → PATIENT, `Demo Patient`, phone `9000000000`;
+  temporary registrations → PATIENT with their real names/phones, then their rows were
+  deleted. This was repeated after the role-id lookup change.
+- Live browser checks: a new registration landed on `/dashboard` as "Nisha Verma · Patient"
+  (not Receptionist); that patient's appointment page showed only her own empty state; after
+  booking with Dr. Leena Das via client-side navigation her single row appeared with no
+  Confirm action; `leena.das@demo.com` landed on `/staff` showing "Dr. Leena Das · Doctor",
+  saw only her six assigned rows including the new request with email `…@example.com` and
+  phone `9812345678`, and confirming it changed Booked → Confirmed; `doctor@demo.com` still
+  saw all 21 clinic-wide rows with confirm actions across doctors. The temporary browser
+  registration account was deleted from MySQL afterwards.
+
+### 21. Real appointment requests in MySQL (PENDING → CONFIRMED)
+
+Owner report: a new patient's appointment request was not stored in the database, and the UI
+said "wait for confirmation" while treating the request as booked immediately. Confirmed
+scope via Q&A: use real DB endpoints, add a PENDING state that does not reserve the slot,
+and let named doctors confirm only their own rows while staff confirm any row.
+
+**Root cause.** Booking and confirmation were still implemented only in
+`features/api/mock.ts`. `requestAppointment()` pushed an in-memory row with status `BOOKED`,
+`getSlots()` then excluded that slot, and the DB schema's generated `active_slot_id` also
+reserved the slot for every `BOOKED` row. Nothing reached MySQL.
+
+**Database (owner supplied MySQL admin credentials; `openclinic_app` has no ALTER/CREATE).**
+New migration `database/migrations/2026-11-16_appointment_requests.sql`:
+
+- `appointments.status` now allows `PENDING` and defaults to it; the 12 legacy `BOOKED`
+  rows were converted to `PENDING`.
+- `active_slot_id` is now generated only for `CONFIRMED`, so a pending request never
+  blocks a slot; the unique index still prevents two confirmed bookings of the same slot.
+- Added 210 future demo slots (`INSERT IGNORE`, 7 days × 6 times × doctors 1–5) because the
+  seeded slots had all expired. `database/schema.sql` was updated to match.
+
+**Backend.** New `schemas/appointments.py`, `repositories/appointments.py`,
+`services/appointments.py` and `api/v1/routes/appointments.py`, registered in the v1 router:
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /api/v1/doctors/{id}/slots` | Future, unfilled slots from `time_slots` |
+| `GET /api/v1/appointments` | Role-scoped list joined with patient/doctor identity and contact |
+| `POST /api/v1/appointments` | Patient creates a `PENDING` request |
+| `PATCH /api/v1/appointments/{id}/confirm` | Named doctor (own rows) / staff (any row) confirms |
+| `PATCH /api/v1/appointments/{id}/cancel` | Cancels and frees the slot |
+
+`GET /auth/me` also returns `patient_id`/`doctor_id` for client-side scoping. All appointment
+writes are transactional; confirmation catches the unique-slot conflict as HTTP 409.
+
+**Frontend.** `apiClient` gained the five calls above. A small external store
+(`features/api/use-appointments.ts`) refreshes on each screen mount and after mutations;
+booking, staff-panel and dashboard pending counts use it instead of mock data. The booking
+screen loads real slots from the API and sends `POST /appointments`; the confirmation dialog
+now says the slot is not booked until approval, and the success banner says "awaiting
+staff confirmation". The appointments table shows "Awaiting confirmation" for `PENDING`,
+wires Confirm and Cancel to the API, and shows a loading/error state. Staff deep link now
+uses `?status=PENDING`. `mock.ts` still serves non-clinical demo screens (marketing, weekly
+chart, schedule illustrations); its appointment mutations are no longer used by the booking
+or approval workflow. Fictional doctors 6–7 have no DB slots, so their booking page reports
+none.
+
+**Verification (2026-11-16).**
+
+- `compileall`, `tsc --noEmit`, `npm run lint`, `npm run build` all clean, 14 routes.
+- HTTP checks: patient request → row `PENDING` with real name/phone; slot still offered to
+  another patient; doctor confirm → row `CONFIRMED` with `active_slot_id` set; slot no
+  longer offered. Test rows were deleted afterwards.
+- Live browser via `python scripts/dev.py`: a newly registered patient booked Dr. Leena Das
+  at 16 Nov 09:00; MySQL held status `PENDING` with the registered email/phone while the
+  slot remained available. The patient's appointments page showed "Awaiting confirmation"
+  with no Confirm action. `leena.das@demo.com` saw the request among her own rows with real
+  contact details and confirmed it; MySQL changed it to `CONFIRMED`, the slot disappeared
+  from the available list, and the UI updated without a reload. The temporary patient and
+  appointment were deleted from MySQL afterwards.

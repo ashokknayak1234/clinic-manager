@@ -26,16 +26,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { appointments, confirmAppointment, type DemoAppointment } from "@/features/api/mock";
+import { getDoctorByFullName } from "@/features/api/mock";
+import { apiClient } from "@/features/api/client";
+import { useAppointments } from "@/features/api/use-appointments";
 import { DEMO_TODAY } from "@/lib/demo-clock";
 import { formatShortDate, formatTime } from "@/lib/format";
-import type { AppointmentStatus } from "@/shared/apiTypes";
+import type { Appointment, AppointmentStatus, Role } from "@/shared/apiTypes";
 import { useAuth } from "@/providers/auth-provider";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
 
 const statusOptions: Array<{ value: AppointmentStatus | "all"; label: string }> = [
   { value: "all", label: "All statuses" },
+  { value: "PENDING", label: "Awaiting confirmation" },
   { value: "BOOKED", label: "Booked" },
   { value: "CONFIRMED", label: "Confirmed" },
   { value: "COMPLETED", label: "Completed" },
@@ -44,30 +47,61 @@ const statusOptions: Array<{ value: AppointmentStatus | "all"; label: string }> 
 ];
 
 const statusOrder: Record<AppointmentStatus, number> = {
-  BOOKED: 0,
-  CONFIRMED: 1,
-  COMPLETED: 2,
-  NO_SHOW: 3,
-  CANCELLED: 4,
+  PENDING: 0,
+  BOOKED: 1,
+  CONFIRMED: 2,
+  COMPLETED: 3,
+  NO_SHOW: 4,
+  CANCELLED: 5,
 };
 
 type SortKey = "date" | "patient" | "status";
 
+/** The API always joins these fields even though the shared type marks them optional. */
+type LiveAppointment = Appointment &
+  Required<
+    Pick<
+      Appointment,
+      "patient_name" | "doctor_name" | "slot_date" | "start_time" | "end_time"
+    >
+  >;
+
 export function AppointmentsView() {
   const searchParams = useSearchParams();
   const paramSearch = searchParams.get("search") ?? "";
-  const paramStatus: AppointmentStatus | "all" =
-    searchParams.get("status") === "BOOKED" ? "BOOKED" : "all";
+  const statusParam = searchParams.get("status");
+  const paramStatus: AppointmentStatus | "all" = statusOptions.some(
+    (option) => option.value === statusParam,
+  )
+    ? (statusParam as AppointmentStatus)
+    : "all";
   const { user } = useAuth();
-  const isStaff = user ? user.role !== "PATIENT" : false;
-  const isPatient = (user?.role ?? "PATIENT") === "PATIENT";
+  const role: Role = user?.role ?? "PATIENT";
+  const isStaff = role !== "PATIENT";
+  const isPatient = role === "PATIENT";
+  const {
+    appointments: rawAppointments,
+    loading,
+    error,
+    refresh,
+    setAppointments,
+  } = useAppointments();
+  const appointments = rawAppointments as LiveAppointment[];
+  // Named doctors are scoped by their joined doctor id; the generic
+  // doctor@demo.com account has no profile row and keeps clinic-wide demo access.
+  const currentDoctorId =
+    role === "DOCTOR"
+      ? user?.doctor_id ?? getDoctorByFullName(user?.full_name)?.doctor_id
+      : undefined;
+  const patientId = user?.patient_id;
+  const patientNameKey = (user?.full_name ?? "").trim().toLowerCase();
+  const patientEmailKey = (user?.email ?? "").trim().toLowerCase();
   const [search, setSearch] = useState(paramSearch);
   const [syncedParam, setSyncedParam] = useState(paramSearch);
   const [status, setStatus] = useState<AppointmentStatus | "all">(paramStatus);
   const [syncedStatus, setSyncedStatus] = useState(paramStatus);
   const [sort, setSort] = useState<SortKey>("date");
-  const [overrides, setOverrides] = useState<Record<number, AppointmentStatus>>({});
-  const [cancelTarget, setCancelTarget] = useState<DemoAppointment | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<LiveAppointment | null>(null);
   const cancelTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   // Re-sync only when the URL parameter itself changes (for example when the
@@ -77,7 +111,7 @@ export function AppointmentsView() {
     setSyncedParam(paramSearch);
     setSearch(paramSearch);
   }
-  // Same re-sync for the deep-linked status filter (?status=BOOKED from the
+  // Same re-sync for the deep-linked status filter (?status=PENDING from the
   // staff queue card): when the URL parameter changes (or disappears),
   // follow it so a plain sidebar click always shows every appointment.
   if (paramStatus !== syncedStatus) {
@@ -87,19 +121,30 @@ export function AppointmentsView() {
 
   const rows = useMemo(() => {
     const term = search.trim().toLowerCase();
-    const list = appointments
-      .map((item) => ({
-        ...item,
-        status: overrides[item.appointment_id] ?? item.status,
-      }))
-      .filter((item) => {
-        const matchesTerm =
-          !term ||
-          item.patient_name.toLowerCase().includes(term) ||
-          item.doctor_name.toLowerCase().includes(term);
-        const matchesStatus = status === "all" || item.status === status;
-        return matchesTerm && matchesStatus;
-      });
+    const list = appointments.filter((item) => {
+      // The API already scopes by role; keep a defensive client-side filter too.
+      if (isPatient) {
+        if (patientId && item.patient_id !== patientId) return false;
+        if (!patientId && patientNameKey) {
+          const emailMatches =
+            Boolean(item.patient_email) &&
+            item.patient_email!.toLowerCase() === patientEmailKey;
+          const nameMatches =
+            !item.patient_email &&
+            item.patient_name.toLowerCase() === patientNameKey;
+          if (!emailMatches && !nameMatches) return false;
+        }
+      }
+      if (currentDoctorId && item.doctor_id !== currentDoctorId) return false;
+      const matchesTerm =
+        !term ||
+        item.patient_name.toLowerCase().includes(term) ||
+        (item.patient_email ?? "").toLowerCase().includes(term) ||
+        (item.patient_phone ?? "").toLowerCase().includes(term) ||
+        item.doctor_name.toLowerCase().includes(term);
+      const matchesStatus = status === "all" || item.status === status;
+      return matchesTerm && matchesStatus;
+    });
 
     list.sort((a, b) => {
       if (sort === "patient") return a.patient_name.localeCompare(b.patient_name);
@@ -109,17 +154,38 @@ export function AppointmentsView() {
       );
     });
     return list;
-  }, [search, status, sort, overrides]);
+  }, [
+    appointments,
+    search,
+    status,
+    sort,
+    isPatient,
+    patientId,
+    currentDoctorId,
+    patientNameKey,
+    patientEmailKey,
+  ]);
 
-  const cancellable = (row: DemoAppointment) =>
-    (row.status === "BOOKED" || row.status === "CONFIRMED") &&
+  const cancellable = (row: LiveAppointment) =>
+    (row.status === "PENDING" ||
+      row.status === "BOOKED" ||
+      row.status === "CONFIRMED") &&
     row.slot_date >= DEMO_TODAY;
 
-  const columns: Column<DemoAppointment>[] = [
+  const columns: Column<LiveAppointment>[] = [
     {
       key: "patient",
       header: "Patient",
-      render: (row) => <span className="font-medium text-ink">{row.patient_name}</span>,
+      render: (row) => (
+        <div className="min-w-[150px]">
+          <span className="font-medium text-ink">{row.patient_name}</span>
+          {isStaff && (row.patient_email || row.patient_phone) && (
+            <span className="mt-0.5 block text-[11px] text-ink-muted">
+              {[row.patient_email, row.patient_phone].filter(Boolean).join(" · ")}
+            </span>
+          )}
+        </div>
+      ),
     },
     { key: "doctor", header: "Doctor", render: (row) => row.doctor_name },
     {
@@ -146,22 +212,29 @@ export function AppointmentsView() {
       header: "Action",
       className: "text-right",
       render: (row) => {
-        const confirmable = isStaff && row.status === "BOOKED";
+        const confirmable =
+          isStaff &&
+          (row.status === "PENDING" || row.status === "BOOKED") &&
+          (!currentDoctorId || row.doctor_id === currentDoctorId);
         if (confirmable) {
           return (
             <Button
               variant="ghost"
               size="xs"
               className="text-status-confirmed hover:bg-success-bg"
-              onClick={() => {
-                confirmAppointment(row.appointment_id);
-                setOverrides((prev) => ({
-                  ...prev,
-                  [row.appointment_id]: "CONFIRMED",
-                }));
-                toast.success(
-                  `Appointment confirmed for ${row.patient_name} (demo table).`,
+              onClick={async () => {
+                const response = await apiClient.confirmAppointment(row.appointment_id);
+                if (!response.success || !response.data) {
+                  toast.error(response.error?.message ?? "Could not confirm the request.");
+                  return;
+                }
+                const confirmed = response.data;
+                setAppointments((current) =>
+                  current.map((item) =>
+                    item.appointment_id === confirmed.appointment_id ? confirmed : item,
+                  ),
                 );
+                toast.success(`Appointment confirmed for ${row.patient_name}.`);
               }}
             >
               <Check className="size-3.5" aria-hidden="true" />
@@ -193,7 +266,13 @@ export function AppointmentsView() {
       <PageHeading
         overline="Clinic schedule"
         title="Appointments"
-        subtitle="Filter, review, and cancel upcoming demo appointments."
+        subtitle={
+          isPatient
+            ? "Request and review your upcoming appointments."
+            : currentDoctorId
+              ? "Review and confirm appointment requests assigned to you."
+              : "Filter, review, and confirm upcoming demo appointments."
+        }
         actions={
           isPatient ? (
             <Button asChild variant="secondary">
@@ -204,6 +283,20 @@ export function AppointmentsView() {
       />
       <DemoBanner />
 
+      {loading && (
+        <p className="rounded-lg border border-line bg-surface p-4 text-[13px] text-ink-muted" role="status">
+          Loading appointments…
+        </p>
+      )}
+      {error && (
+        <div className="flex items-center gap-3 rounded-lg border border-error/20 bg-error-bg p-4 text-[13px] text-status-cancelled" role="alert">
+          <span>{error}</span>
+          <Button variant="secondary" size="xs" onClick={() => void refresh()}>
+            Retry
+          </Button>
+        </div>
+      )}
+      {!loading && !error && (
       <DataTable
         caption="Appointments"
         rows={rows}
@@ -265,12 +358,21 @@ export function AppointmentsView() {
         empty={
           <EmptyState
             icon={CalendarDays}
-            title="No appointments match"
-            body="Adjust the search term or status filter to see more rows."
+            title={
+              isPatient && !search.trim() && status === "all"
+                ? "No appointments yet"
+                : "No appointments match"
+            }
+            body={
+              isPatient && !search.trim() && status === "all"
+                ? "Book a consultation from the doctors page to create a request."
+                : "Adjust the search term or status filter to see more rows."
+            }
             className="border-0"
           />
         }
       />
+      )}
 
       <Dialog open={Boolean(cancelTarget)} onOpenChange={(open) => !open && setCancelTarget(null)}>
         <DialogContent
@@ -283,8 +385,8 @@ export function AppointmentsView() {
           <DialogHeader>
             <DialogTitle>Cancel appointment</DialogTitle>
             <DialogDescription>
-              This only changes the demo table. The backend keeps no appointment
-              record.
+              The appointment is marked Cancelled in the clinic database and the
+              slot becomes available again.
             </DialogDescription>
           </DialogHeader>
           {cancelTarget && (
@@ -302,14 +404,21 @@ export function AppointmentsView() {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => {
-                if (cancelTarget) {
-                  setOverrides((current) => ({
-                    ...current,
-                    [cancelTarget.appointment_id]: "CANCELLED",
-                  }));
+              onClick={async () => {
+                if (!cancelTarget) return;
+                const response = await apiClient.cancelAppointment(cancelTarget.appointment_id);
+                if (!response.success || !response.data) {
+                  toast.error(response.error?.message ?? "Could not cancel the appointment.");
+                  return;
                 }
+                const cancelled = response.data;
+                setAppointments((current) =>
+                  current.map((item) =>
+                    item.appointment_id === cancelled.appointment_id ? cancelled : item,
+                  ),
+                );
                 setCancelTarget(null);
+                toast.success("Appointment cancelled.");
               }}
             >
               Cancel appointment

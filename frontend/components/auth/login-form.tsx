@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 const demoAccounts = [
   { role: "Patient", email: "patient@demo.com", password: "patient123" },
   { role: "Doctor", email: "doctor@demo.com", password: "doctor123" },
+  { role: "Doctor (named)", email: "leena.das@demo.com", password: "doctor123" },
   { role: "Admin", email: "admin@demo.com", password: "admin123" },
 ];
 
@@ -71,6 +72,10 @@ export function LoginForm() {
             </li>
           ))}
         </ul>
+        <p className="mt-2 text-[11px] leading-relaxed text-ink-faint">
+          Other named doctors: arjun.bose@demo.com, tara.dutta@demo.com,
+          samir.rao@demo.com, aarav.das@demo.com — password doctor123.
+        </p>
       </div>
 
       {error && (
@@ -89,6 +94,7 @@ export function LoginForm() {
           </Label>
           <Input
             id="email"
+            name="email"
             type="email"
             autoComplete="username"
             placeholder="you@example.com"
@@ -106,6 +112,7 @@ export function LoginForm() {
           <div className="relative">
             <Input
               id="password"
+              name="password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               placeholder="Enter your password"
@@ -133,6 +140,7 @@ export function LoginForm() {
           <div className="flex items-center gap-2">
             <Checkbox
               id="remember"
+              name="remember"
               checked={remember}
               onCheckedChange={(value) => setRemember(value === true)}
               className="size-4 rounded-sm border-line-strong data-[state=checked]:bg-primary-500"

@@ -9,30 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/providers/auth-provider";
+import { displayNameForUser, roleLabels } from "@/lib/demo-user";
 import { initials } from "@/lib/format";
-import type { Role } from "@/shared/apiTypes";
-
-const displayNames: Record<Role, string> = {
-  ADMIN: "Demo Admin",
-  DOCTOR: "Dr. Demo Doctor",
-  RECEPTIONIST: "Demo Reception",
-  PATIENT: "Demo Patient",
-};
-
-const roleLabels: Record<Role, string> = {
-  ADMIN: "Administrator",
-  DOCTOR: "Doctor",
-  RECEPTIONIST: "Receptionist",
-  PATIENT: "Patient",
-};
 
 export function ProfileView() {
   const { user } = useAuth();
   const role = user?.role ?? "PATIENT";
-  const name = displayNames[role];
+  const name = displayNameForUser(user, role);
   const [form, setForm] = useState({
     full_name: name,
-    phone: "",
+    phone: user?.phone ?? "",
     date_of_birth: "",
     address: "",
     emergency_contact_name: "",

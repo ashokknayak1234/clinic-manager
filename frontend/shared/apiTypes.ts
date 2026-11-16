@@ -1,6 +1,7 @@
 export type Role = "ADMIN" | "DOCTOR" | "RECEPTIONIST" | "PATIENT";
 
 export type AppointmentStatus =
+  | "PENDING"
   | "BOOKED"
   | "CONFIRMED"
   | "COMPLETED"
@@ -16,6 +17,13 @@ export interface User {
   email: string;
   role: Role;
   is_active: boolean;
+  /** Joined from the patients or doctors profile (null for admin-only users). */
+  full_name?: string | null;
+  /** Patient phone number; null for staff accounts without a patient profile. */
+  phone?: string | null;
+  /** Profile ids used for server-side appointment scoping. */
+  patient_id?: number | null;
+  doctor_id?: number | null;
 }
 
 export interface Patient {
@@ -71,6 +79,9 @@ export interface Appointment {
   created_at: string;
   updated_at: string;
   patient_name?: string;
+  /** Contact details captured with a patient-created request. */
+  patient_email?: string | null;
+  patient_phone?: string | null;
   doctor_name?: string;
   specialty?: string;
   slot_date?: string;

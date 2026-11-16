@@ -22,7 +22,7 @@ export default function MarketingLayout({
     <div className="flex min-h-screen flex-col bg-marketing">
       <header className="sticky top-0 z-40 border-b border-transparent bg-marketing/90 backdrop-blur-md">
         <div className="container-marketing flex h-24 items-center justify-between gap-6">
-          <Link href="/" aria-label="OpenClinic home">
+          <Link href="/">
             <Logo />
           </Link>
           {/* Owner-directed React Bits PillNav (2026-11-15); see DEVIATIONS.md. */}

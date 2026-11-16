@@ -49,7 +49,7 @@ export function HeroStatBento() {
         </article>
       </div>
 
-      <article className="relative flex h-[274px] flex-col justify-between self-end overflow-hidden rounded-2xl bg-primary-500 p-6 text-white shadow-sm">
+      <article className="relative flex h-[274px] flex-col justify-between self-end overflow-hidden rounded-2xl bg-primary-600 p-6 text-white shadow-sm">
         <div>
           <p className="text-sm text-white">Workspaces</p>
           <p className="mt-2 text-kpi tabular">4</p>

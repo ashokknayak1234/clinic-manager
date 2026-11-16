@@ -62,7 +62,7 @@ export function PrescriptionsView() {
     },
     {
       key: "action",
-      header: "",
+      header: "Action",
       className: "text-right",
       render: (row) => (
         <Button

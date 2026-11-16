@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CalendarCheck2, Check, Clock3 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeading } from "@/components/portal/page-heading";
@@ -18,7 +18,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getDoctor, getSlots, requestAppointment } from "@/features/api/mock";
+import { apiClient } from "@/features/api/client";
+import { getDoctor } from "@/features/api/mock";
+import type { TimeSlot } from "@/shared/apiTypes";
 import { formatCurrency, formatShortDate, formatTime, initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -26,16 +28,45 @@ export function BookingView() {
   const params = useParams<{ doctorId: string }>();
   const doctorId = Number(params.doctorId);
   const doctor = getDoctor(doctorId);
-  const slots = useMemo(() => getSlots(doctorId), [doctorId]);
+  const [slots, setSlots] = useState<TimeSlot[]>([]);
+  const [loadedFor, setLoadedFor] = useState<number | null>(null);
+  const [slotsError, setSlotsError] = useState<string | null>(null);
+  const [date, setDate] = useState("");
+  const slotsLoading = loadedFor !== doctorId;
+  const [slotId, setSlotId] = useState<number | null>(null);
+  const [open, setOpen] = useState(false);
+  const confirmTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const statusRef = useRef<HTMLParagraphElement | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+  // Slot ids already requested in this session: keep them visible but disabled
+  // so the same slot cannot be booked twice.
+  const [requestedIds, setRequestedIds] = useState<number[]>([]);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void apiClient.getDoctorSlots(doctorId).then((response) => {
+      if (!active) return;
+      if (response.success && response.data) {
+        setSlots(response.data);
+        setSlotsError(null);
+      } else {
+        setSlots([]);
+        setSlotsError(response.error?.message ?? "Could not load available slots.");
+      }
+      setLoadedFor(doctorId);
+    });
+    return () => {
+      active = false;
+    };
+  }, [doctorId]);
+
   const dates = useMemo(
     () => Array.from(new Set(slots.map((slot) => slot.slot_date))),
     [slots],
   );
-  const [date, setDate] = useState(dates[0] ?? "");
-  const [slotId, setSlotId] = useState<number | null>(null);
-  const [open, setOpen] = useState(false);
-  const confirmTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const [confirmed, setConfirmed] = useState(false);
+  const activeDate = date && dates.includes(date) ? date : (dates[0] ?? "");
 
   if (!doctor) {
     return (
@@ -52,7 +83,7 @@ export function BookingView() {
     );
   }
 
-  const daySlots = slots.filter((slot) => slot.slot_date === date);
+  const daySlots = slots.filter((slot) => slot.slot_date === activeDate);
   const selected = slots.find((slot) => slot.slot_id === slotId);
 
   return (
@@ -87,17 +118,20 @@ export function BookingView() {
                   onClick={() => {
                     setDate(value);
                     setSlotId(null);
+                    setConfirmed(false);
                   }}
-                  aria-pressed={date === value}
+                  aria-pressed={activeDate === value}
                   className={cn(
                     "flex h-[64px] flex-col items-center justify-center rounded-lg border text-[12px] transition-colors",
-                    date === value
+                    activeDate === value
                       ? "border-primary-500 bg-primary-50 text-ink"
                       : "border-line text-ink-muted hover:border-line-strong hover:bg-subtle",
                   )}
                 >
                   <span className="font-semibold">{formatShortDate(value)}</span>
-                  <span className="mt-0.5 text-ink-faint">Select</span>
+                  <span className="mt-0.5 text-ink-faint">
+                    {activeDate === value ? "Selected" : "Select"}
+                  </span>
                 </button>
               ))}
             </div>
@@ -107,41 +141,69 @@ export function BookingView() {
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-h3 text-ink">Available slots</h2>
               <span className="text-[12px] text-ink-muted">
-                {formatShortDate(date)}
+                {activeDate ? formatShortDate(activeDate) : "—"}
               </span>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {daySlots.map((slot) => (
-                <button
-                  key={slot.slot_id}
-                  type="button"
-                  disabled={!slot.is_available}
-                  onClick={() => setSlotId(slot.slot_id)}
-                  aria-pressed={slotId === slot.slot_id}
-                  className={cn(
-                    "inline-flex h-10 items-center justify-center gap-1.5 rounded-md border text-[13px] transition-colors",
-                    !slot.is_available
-                      ? "cursor-not-allowed border-line bg-subtle text-ink-faint line-through"
-                      : slotId === slot.slot_id
-                        ? "border-accent-500 bg-accent-50 font-semibold text-accent-700"
-                        : "border-line text-ink hover:border-line-strong hover:bg-subtle",
-                  )}
-                >
-                  <Clock3 className="size-3.5" aria-hidden="true" />
-                  {formatTime(slot.start_time)}
-                </button>
-              ))}
-            </div>
+            {slotsLoading ? (
+              <p className="mt-3 text-[13px] text-ink-muted">Loading available slots…</p>
+            ) : slotsError ? (
+              <p className="mt-3 rounded-md bg-error-bg px-3 py-2 text-[13px] text-status-cancelled" role="alert">
+                {slotsError}
+              </p>
+            ) : daySlots.length === 0 ? (
+              <p className="mt-3 text-[13px] text-ink-muted">
+                No slots are available for this date.
+              </p>
+            ) : (
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {daySlots.map((slot) => {
+                  const requested = requestedIds.includes(slot.slot_id);
+                  return (
+                    <button
+                      key={slot.slot_id}
+                      type="button"
+                      disabled={!slot.is_available || requested}
+                      onClick={() => {
+                        setSlotId(slot.slot_id);
+                        setRequestError(null);
+                        setConfirmed(false);
+                      }}
+                      aria-pressed={slotId === slot.slot_id}
+                      className={cn(
+                        "inline-flex h-10 items-center justify-center gap-1.5 rounded-md border text-[13px] transition-colors",
+                        !slot.is_available
+                          ? "cursor-not-allowed border-line bg-subtle text-ink-faint line-through"
+                          : requested
+                            ? "cursor-default border-success bg-success-bg font-medium text-status-confirmed"
+                            : slotId === slot.slot_id
+                              ? "border-accent-500 bg-accent-50 font-semibold text-accent-700"
+                              : "border-line text-ink hover:border-line-strong hover:bg-subtle",
+                      )}
+                    >
+                      {requested ? (
+                        <Check className="size-3.5" aria-hidden="true" />
+                      ) : (
+                        <Clock3 className="size-3.5" aria-hidden="true" />
+                      )}
+                      {formatTime(slot.start_time)}
+                      {requested && <span className="sr-only"> (requested)</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {confirmed && (
               <p
+                ref={statusRef}
+                tabIndex={-1}
                 role="status"
-                className="mt-4 flex items-start gap-2 rounded-md bg-warning-bg px-3 py-2 text-[12px] text-status-booked"
+                className="mt-4 flex items-start gap-2 rounded-md bg-warning-bg px-3 py-2 text-[12px] text-status-booked focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                 <span>
-                  Request recorded for the demo workspace — it stays{" "}
-                  <strong>Booked</strong> until clinic staff confirm it.
+                  Request saved. It is <strong>awaiting staff confirmation</strong> —
+                  the slot is not booked until a doctor or receptionist approves it.
                 </span>
               </p>
             )}
@@ -190,13 +252,14 @@ export function BookingView() {
               disabled={!selected}
               onClick={(event) => {
                 confirmTriggerRef.current = event.currentTarget;
+                setRequestError(null);
                 setOpen(true);
               }}
             >
-              Confirm appointment
+              Request appointment
             </Button>
             <p className="mt-3 text-center text-[12px] text-ink-faint">
-              Fictional provider and slots · demo only
+              Demo clinic database · no reminders are sent
             </p>
           </div>
         </aside>
@@ -207,14 +270,17 @@ export function BookingView() {
           data-lenis-prevent
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            confirmTriggerRef.current?.focus();
+            // The confirm button is disabled once no slot is selected, so move
+            // focus to the status banner that explains what happened.
+            if (statusRef.current) statusRef.current.focus();
+            else confirmTriggerRef.current?.focus();
           }}
         >
           <DialogHeader>
             <DialogTitle>Confirm appointment</DialogTitle>
             <DialogDescription>
-              This records a request in the demo workspace only. No reminder will
-              be sent.
+              This saves a pending request in the clinic database. The slot is
+              only booked after staff confirms it.
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-lg bg-subtle p-4 text-[13px]">
@@ -223,24 +289,40 @@ export function BookingView() {
               {selected ? `${formatShortDate(selected.slot_date)} · ${formatTime(selected.start_time)}` : ""}
             </p>
           </div>
+          {requestError && (
+            <p className="mt-3 rounded-md bg-error-bg px-3 py-2 text-[13px] text-status-cancelled" role="alert">
+              {requestError}
+            </p>
+          )}
           <DialogFooter>
-            <Button variant="secondary" onClick={() => setOpen(false)}>
+            <Button variant="secondary" onClick={() => setOpen(false)} disabled={submitting}>
               Cancel
             </Button>
             <Button
               variant="accent"
-              onClick={() => {
+              disabled={!selected || submitting}
+              onClick={async () => {
                 if (!selected) return;
-                requestAppointment({
+                setSubmitting(true);
+                setRequestError(null);
+                const response = await apiClient.createAppointment({
                   doctor_id: doctorId,
-                  slot: selected,
+                  slot_id: selected.slot_id,
+                  reason: "New appointment request",
                 });
+                setSubmitting(false);
+                if (!response.success) {
+                  setRequestError(response.error?.message ?? "Could not send the request.");
+                  return;
+                }
+                setRequestedIds((current) => [...current, selected.slot_id]);
                 setOpen(false);
                 setConfirmed(true);
-                toast.success("Appointment request recorded — waiting for staff confirmation.");
+                setSlotId(null);
+                toast.success("Request saved — waiting for staff confirmation.");
               }}
             >
-              Confirm
+              {submitting ? "Sending…" : "Send request"}
             </Button>
           </DialogFooter>
         </DialogContent>

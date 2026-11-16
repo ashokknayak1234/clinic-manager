@@ -43,13 +43,15 @@ export function PillBarChart({
                 </motion.div>
               </div>
               <span
-                role="tooltip"
+                aria-hidden="true"
                 className="pointer-events-none absolute -top-7 left-1/2 z-10 hidden -translate-x-1/2 rounded-sm bg-navy-900 px-2 py-1 text-[12px] font-medium whitespace-nowrap text-white opacity-0 transition-opacity group-hover:opacity-100 sm:block"
               >
                 {value} appointments
               </span>
             </div>
-            <span className="text-[12px] text-ink-faint">{labels[index]}</span>
+            <span className="text-[12px] text-ink-faint" aria-hidden="true">
+              {labels[index]}
+            </span>
             <span className="sr-only">
               {labels[index]}: {value} appointments
             </span>

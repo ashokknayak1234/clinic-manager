@@ -5,6 +5,11 @@ const statusStyles: Record<
   AppointmentStatus,
   { label: string; className: string; dot: string }
 > = {
+  PENDING: {
+    label: "Awaiting confirmation",
+    className: "bg-warning-bg text-status-booked",
+    dot: "bg-warning",
+  },
   BOOKED: {
     label: "Booked",
     className: "bg-warning-bg text-status-booked",

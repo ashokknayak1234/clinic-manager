@@ -41,8 +41,11 @@
   --color-line: #eaecef;
   --color-line-strong: #d9dee5;
   --color-ink: #111827;
-  --color-ink-muted: #71757f;
-  --color-ink-faint: #9ca3af;
+  /* Muted/faint greys are darkened from the original #71757f / #9ca3af so
+     secondary copy meets WCAG AA (4.5:1) on every surface token, including
+     panel, subtle, primary-50, warning-bg and error-bg. See DEVIATIONS.md #18. */
+  --color-ink-muted: #5c626f;
+  --color-ink-faint: #646a77;
   --color-dark-text: #f5f7fb;
   --color-dark-muted: #9aa3b8;
   --color-dark-outline: #1f2937;
@@ -155,7 +158,7 @@
   --secondary: #ffffff;
   --secondary-foreground: #111827;
   --muted: #f1f2f5;
-  --muted-foreground: #71757f;
+  --muted-foreground: #5c626f;
   --accent: #efeeff;
   --accent-foreground: #3a31b8;
   --destructive: #d9534f;

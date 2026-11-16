@@ -16,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DEMO_TODAY } from "@/lib/demo-clock";
 import type { RegisterRequest } from "@/shared/apiTypes";
 
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -61,6 +60,18 @@ export function RegisterForm() {
       next.password = "Use at least 8 characters.";
     if (values.confirm_password !== values.password)
       next.confirm_password = "Passwords do not match.";
+    if (values.date_of_birth) {
+      // Compare against the real wall clock, not the frozen demo clock, so
+      // today's date is always selectable.
+      const dob = new Date(`${values.date_of_birth}T00:00:00`);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (Number.isNaN(dob.getTime())) {
+        next.date_of_birth = "Enter a valid date.";
+      } else if (dob > today) {
+        next.date_of_birth = "Date of birth cannot be in the future.";
+      }
+    }
     if (values.phone.trim().length > 30) next.phone = "Use 30 characters or fewer.";
     if (values.address.trim().length > 255)
       next.address = "Use 255 characters or fewer.";
@@ -259,11 +270,19 @@ export function RegisterForm() {
               name="date_of_birth"
               type="date"
               autoComplete="bday"
-              max={DEMO_TODAY}
               value={values.date_of_birth}
               onChange={(event) => update("date_of_birth", event.target.value)}
+              aria-invalid={Boolean(fieldErrors.date_of_birth)}
+              aria-describedby={
+                fieldErrors.date_of_birth ? "date_of_birth-error" : undefined
+              }
               className={inputClass}
             />
+            {fieldErrors.date_of_birth && (
+              <p id="date_of_birth-error" role="alert" className="text-[12px] text-error">
+                {fieldErrors.date_of_birth}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -279,8 +298,14 @@ export function RegisterForm() {
               value={values.phone}
               onChange={(event) => update("phone", event.target.value)}
               aria-invalid={Boolean(fieldErrors.phone)}
+              aria-describedby={fieldErrors.phone ? "phone-error" : undefined}
               className={inputClass}
             />
+            {fieldErrors.phone && (
+              <p id="phone-error" role="alert" className="text-[12px] text-error">
+                {fieldErrors.phone}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -316,8 +341,14 @@ export function RegisterForm() {
               value={values.address}
               onChange={(event) => update("address", event.target.value)}
               aria-invalid={Boolean(fieldErrors.address)}
+              aria-describedby={fieldErrors.address ? "address-error" : undefined}
               className={inputClass}
             />
+            {fieldErrors.address && (
+              <p id="address-error" role="alert" className="text-[12px] text-error">
+                {fieldErrors.address}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -331,8 +362,22 @@ export function RegisterForm() {
               value={values.emergency_contact_name}
               onChange={(event) => update("emergency_contact_name", event.target.value)}
               aria-invalid={Boolean(fieldErrors.emergency_contact_name)}
+              aria-describedby={
+                fieldErrors.emergency_contact_name
+                  ? "emergency_contact_name-error"
+                  : undefined
+              }
               className={inputClass}
             />
+            {fieldErrors.emergency_contact_name && (
+              <p
+                id="emergency_contact_name-error"
+                role="alert"
+                className="text-[12px] text-error"
+              >
+                {fieldErrors.emergency_contact_name}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -348,8 +393,22 @@ export function RegisterForm() {
               value={values.emergency_contact_phone}
               onChange={(event) => update("emergency_contact_phone", event.target.value)}
               aria-invalid={Boolean(fieldErrors.emergency_contact_phone)}
+              aria-describedby={
+                fieldErrors.emergency_contact_phone
+                  ? "emergency_contact_phone-error"
+                  : undefined
+              }
               className={inputClass}
             />
+            {fieldErrors.emergency_contact_phone && (
+              <p
+                id="emergency_contact_phone-error"
+                role="alert"
+                className="text-[12px] text-error"
+              >
+                {fieldErrors.emergency_contact_phone}
+              </p>
+            )}
           </div>
         </div>
 

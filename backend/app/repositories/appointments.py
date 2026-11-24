@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from typing import Any
 
 from pymysql.connections import Connection
@@ -44,6 +45,43 @@ def get_slot(connection: Connection, slot_id: int) -> dict[str, Any] | None:
             (slot_id,),
         )
         return cursor.fetchone()
+
+
+_DEMO_SLOT_TIMES = (
+    ("09:00:00", "10:00:00"),
+    ("10:00:00", "11:00:00"),
+    ("11:00:00", "12:00:00"),
+    ("14:00:00", "15:00:00"),
+    ("15:00:00", "16:00:00"),
+    ("16:00:00", "17:00:00"),
+)
+
+
+def ensure_future_slots(connection: Connection, doctor_id: int, days: int = 7) -> None:
+    """Keep a rolling week of demo slots so the booking screen never runs dry.
+
+    The original seed/migration slots were fixed dates and expired; INSERT IGNORE
+    makes this safe to call on every slot lookup.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT 1 FROM doctors WHERE doctor_id = %s AND is_active = TRUE",
+            (doctor_id,),
+        )
+        if not cursor.fetchone():
+            return
+        today = date.today()
+        rows = [
+            (doctor_id, today + timedelta(days=offset), start, end, 1)
+            for offset in range(days)
+            for start, end in _DEMO_SLOT_TIMES
+        ]
+        cursor.executemany(
+            """INSERT IGNORE INTO time_slots
+                   (doctor_id, slot_date, start_time, end_time, is_available)
+               VALUES (%s, %s, %s, %s, %s)""",
+            rows,
+        )
 
 
 def list_available_slots(connection: Connection, doctor_id: int) -> list[dict[str, Any]]:

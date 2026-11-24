@@ -499,3 +499,20 @@ none.
   contact details and confirmed it; MySQL changed it to `CONFIRMED`, the slot disappeared
   from the available list, and the UI updated without a reload. The temporary patient and
   appointment were deleted from MySQL afterwards.
+
+### 22. Rolling demo slots (booking page date/slot picker was empty)
+
+Owner report: a newly registered patient could not pick a date or an available time.
+Cause: the migration in entry 21 seeded fixed slots for 16–22 Nov 2026; by 24 Nov
+`GET /doctors/{id}/slots` returned zero rows because it filters `slot_date >= CURDATE()`.
+
+**Fix.** `repositories/appointments.py::ensure_future_slots()` now inserts a rolling 7-day
+window (6 slots/day, `INSERT IGNORE`) for the requested active doctor, and
+`services/appointments.py::list_slots()` calls it before reading. This is idempotent and
+replenishes automatically, so the picker can never expire again. The fixed-date seed rows
+remain as historical demo data.
+
+**Verification (2026-11-24).** Backend `compileall` clean; with both servers started via
+`python scripts/dev.py`, `GET /doctors/1/slots` returned 42 slots from 24–30 Nov. In the
+browser, a freshly registered patient saw seven selectable dates and six time buttons on
+Dr. Leena Das's booking page. The temporary test account was deleted from MySQL.

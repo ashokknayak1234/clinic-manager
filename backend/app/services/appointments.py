@@ -17,6 +17,7 @@ class AppointmentError(Exception):
 
 def list_slots(doctor_id: int) -> list[SlotOut]:
     with transaction() as connection:
+        repo.ensure_future_slots(connection, doctor_id)
         return [SlotOut(**row) for row in repo.list_available_slots(connection, doctor_id)]
 
 
